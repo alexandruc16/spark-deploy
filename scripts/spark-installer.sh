@@ -4,10 +4,11 @@ sudo apt-get -y upgrade > /dev/null
 
 ## JAVA
 command -v javac>/dev/null 2>&1 || { echo >&2 "I require java but it's not \
-    installed. Installing java"; sudo apt-get install -y default-jdk;}
+    installed. Installing java"; wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR;
+    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz; sudo mv jdk1.8.0_161 /usr/lib }
 # if java_home is not set
 if [ -z "$JAVA_HOME" ]; then
-    echo "export JAVA_HOME=/usr/lib/jvm/default-java" >> ~/.bashrc
+    echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> ~/.bashrc
 	source ~/.bashrc
 fi
 
@@ -18,7 +19,7 @@ cd $SRC_DIR
 cd ..
 cd $pwd
 DOWNLOAD_DIR=~/Downloads
-PROJ_DIR=~/SPARK
+PROJ_DIR=/usr/local
 CONF_FILES_DIR=$PROJ_DIR/config-files
 HADOOP_DIR=$PROJ_DIR/hadoop
 SCALA_DIR=$PROJ_DIR/scala
@@ -38,10 +39,9 @@ hadoop -h 2>&1>/dev/null
 if [ $? == 0 ]; then
     echo 'Hadoop was found'
 else
-    #wget http://psg.mtu.edu/pub/apache/hadoop/common/stable/hadoop-1.2.1.tar.gz -P $DOWNLOAD_DIR
-    wget http://apache.claz.org/hadoop/common/hadoop-2.2.0/hadoop-2.2.0.tar.gz -P $DOWNLOAD_DIR
-    tar -xzf $DOWNLOAD_DIR/hadoop-2.2.0.tar.gz
-    mv hadoop-2.2.0 $HADOOP_DIR
+    wget http://www.apache.org/dyn/closer.cgi/hadoop/common/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/hadoop-2.7.5.tar.gz
+    mv hadoop-2.7.5 $HADOOP_DIR
     if [ -z "$HADOOP_PREFIX" ]; then
         echo "export HADOOP_PREFIX=$HADOOP_DIR" >> ~/.bashrc
         echo "export PATH=$PATH:$HADOOP_DIR/bin" >> ~/.bashrc
@@ -63,7 +63,7 @@ else
     cp $CONF_FILES_DIR/hdfs-site.xml $HADOOP_DIR/conf
 #    mv $HADOOP_DIR/conf/hadoop-env.sh.template $HADOOP_DIR/conf/hadoop-env.sh
     #set JAVA_HOME in hadoop config file
-    echo "export JAVA_HOME=/usr/lib/jvm/default-java" >> $HADOOP_DIR/conf/hadoop-env.sh
+    echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> $HADOOP_DIR/conf/hadoop-env.sh
     # Format the name node
     chmod -R 777 $HADOOP_DIR
     hadoop namenode -format
@@ -78,22 +78,22 @@ if [ $? == 0  ]; then
     echo 'Scala was found'
 else
     # download the src for hadoop, scala and spark
-    wget http://www.scala-lang.org/files/archive/scala-2.9.3.tgz -P $DOWNLOAD_DIR
+    wget https://github.com/scala/scala/archive/v2.11.12.tar.gz -P $DOWNLOAD_DIR
     #Extract hadoop and Scala
-    tar -zxf scala-2.9.3.tgz
-    mv scala-2.9.3 $SCALA_DIR
+    tar -zxf scala-2.11.12.tgz
+    mv scala-2.11.12 $SCALA_DIR
     chmod -R 777 $SCALA_DIR
     echo "***** Now Copying Scala *****"
-    echo "export SCALA_HOME=~/SPARK/scala" >> ~/.bashrc
+    echo "export SCALA_HOME=$SCALA_DIR" >> ~/.bashrc
     echo "export PATH=$PATH:$SCALA_DIR/bin" >> ~/.bashrc
 fi
 
 ## SPARK
 #wget http://www.spark-project.org/download/spark-0.7.3-sources.tgz -P $DOWNLOAD_DIR
-wget http://spark-project.org/download/spark-0.8.0-incubating.tgz -P $DOWNLOAD_DIR
-tar -xzf $DOWNLOAD_DIR/spark-0.8.0-incubating.tgz
+wget http://apache.mirror.triple-it.nl/spark/spark-2.2.1/spark-2.2.1-bin-hadoop2.7.tgz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7.tgz
 # Now build Spark
-cp -R $DOWNLOAD_DIR/spark-0.8.0-incubating $SPARK_DIR
+cp -R $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7 $SPARK_DIR
 
 mv $SPARK_DIR/conf/spark-env.sh.template $SPARK_DIR/conf/spark-env.sh
 echo "export SCALA_HOME=$SCALA_DIR" >> $SPARK_DIR/conf/spark-env.sh

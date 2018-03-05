@@ -10,7 +10,7 @@ def ShellCommand(command):
         devnull.close()
         return True
     except OSError as (errno, strerror):
-        print (Binary Not Found: " + str(strerror))
+        print ("Binary Not Found: " + str(strerror))
         return False
     except Exception, error:
         print("Error while executing command: " + str(command))
@@ -25,9 +25,9 @@ def InstallJava():
 
 
 def InstallHadoop():
-    status = ShellCommand(["wget", "https://github.com/apache/hadoop-common/
-                            "archive/release-1.1.2.tar.gz", "-P", "/tmp"])
+    status = ShellCommand(["wget", "https://github.com/apache/hadoop-common/archive/release-1.1.2.tar.gz", "-P", "/tmp"])
     status = ShellCommand(["tar", "-xzf", "/tmp/release-1.1.2.tar.gz"])
+
 
 def CheckPreReqs():
     status = {}
@@ -43,7 +43,7 @@ def CheckPreReqs():
     else:
         status['hadoop'] = True
 
-    scala_installed = ShellCommand(["scala","-h"])
+    scala_installed = ShellCommand(["scala", "-h"])
     if not scala_installed:
         status['scala'] = False
     else:
@@ -55,7 +55,7 @@ def CheckPreReqs():
 def main():
 
     status = CheckPreReqs()
-    for key,val in status.items():
+    for key, val in status.items():
         print(key + " : " + str(val))
 if __name__ == "__main__":
     main()
