@@ -1,11 +1,14 @@
-#!/bin/bash 
-sudo apt-get update > /dev/null 
-sudo apt-get -y upgrade > /dev/null
+#!/bin/bash
+sudo apt-get install -f
+sudo apt-get update
+sudo apt-get -y upgrade
+
+DOWNLOAD_DIR=~/Downloads
 
 ## JAVA
-command -v javac>/dev/null 2>&1 || { echo >&2 "I require java but it's not \
+command -v javac>/dev/null 2>&1 || (echo >&2 "I require java but it's not \
     installed. Installing java"; wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR;
-    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz; sudo mv jdk1.8.0_161 /usr/lib }
+    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz; sudo mv jdk1.8.0_161 /usr/lib)
 # if java_home is not set
 if [ -z "$JAVA_HOME" ]; then
     echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> ~/.bashrc
@@ -18,7 +21,6 @@ SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $SRC_DIR
 cd ..
 cd $pwd
-DOWNLOAD_DIR=~/Downloads
 PROJ_DIR=/usr/local
 CONF_FILES_DIR=$PROJ_DIR/config-files
 HADOOP_DIR=$PROJ_DIR/hadoop
@@ -80,7 +82,7 @@ else
     # download the src for hadoop, scala and spark
     wget https://github.com/scala/scala/archive/v2.11.12.tar.gz -P $DOWNLOAD_DIR
     #Extract hadoop and Scala
-    tar -zxf scala-2.11.12.tgz
+    tar -zxf v2.11.12.tar.gz
     mv scala-2.11.12 $SCALA_DIR
     chmod -R 777 $SCALA_DIR
     echo "***** Now Copying Scala *****"
