@@ -89,6 +89,7 @@ else
     echo "***** Now Copying Scala *****"
     echo "export SCALA_HOME=$SCALA_DIR" >> ~/.bashrc
     echo "export PATH=$PATH:$SCALA_DIR/bin" >> ~/.bashrc
+    source ~/.bashrc
 fi
 
 ## SPARK
