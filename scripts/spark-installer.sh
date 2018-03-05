@@ -12,6 +12,7 @@ command -v javac>/dev/null 2>&1 || (echo >&2 "I require java but it's not \
 # if java_home is not set
 if [ -z "$JAVA_HOME" ]; then
     echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> ~/.bashrc
+    echo "export PATH=$PATH:$JAVA_HOME/bin" >> ~/.bashrc
 	source ~/.bashrc
 fi
 
