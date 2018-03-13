@@ -1,111 +1,172 @@
 #!/bin/bash
-sudo apt-get install -f
-sudo apt-get update
-sudo apt-get -y upgrade
+NC='\033[0m' # no color
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+
+#sudo apt-get install -f
+#sudo apt-get update
+#sudo apt-get -y upgrade
+
+## Git
+echo -e "${YELLOW}Installing Git${NC}"
+apt install git
+echo -e "${GREEN}*********** Git Done ************${NC}"
+
+## Python
+echo -e "${YELLOW}Installing Python and required libraries${NC}"
+apt install python2.7 python-pip
+pip2 install paramiko pyzmq psutil
+echo -e "${GREEN}*********** Python Done ************${NC}"
 
 DOWNLOAD_DIR=~/Downloads
+ENVIRONMENT=/etc/environment
+source $ENVIRONMENT
+
 
 ## JAVA
-command -v javac>/dev/null 2>&1 || (echo >&2 "I require java but it's not \
-    installed. Installing java"; wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR;
-    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz; sudo mv jdk1.8.0_161 /usr/lib)
-# if java_home is not set
-if [ -z "$JAVA_HOME" ]; then
-    echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> ~/.bashrc
-    echo "export PATH=$PATH:$JAVA_HOME/bin" >> ~/.bashrc
-	source ~/.bashrc
+javac -help >/dev/null 2>&1
+if [ $? == 0 ]; then
+    echo -e "${GREEN}Java was found${NC}"
+else
+    echo -e "${YELLOW}Installing Oracle JDK v1.8${NC}"
+    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz -C $DOWNLOAD_DIR
+    mv $DOWNLOAD_DIR/jdk1.8.0_161 /usr/lib
+    if [ -z "$JAVA_HOME" ]; then
+        echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> $ENVIRONMENT
+        echo "export PATH=$PATH:/usr/lib/jdk1.8.0_161/bin" >> $ENVIRONMENT
+        source $ENVIRONMENT
+    fi
+    echo -e "${GREEN}***** JAVA DONE! *****${NC}"
 fi
 
 # Initialize directories
-pwd=$PWD
-SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd $SRC_DIR
-cd ..
-cd $pwd
 PROJ_DIR=/usr/local
-CONF_FILES_DIR=$PROJ_DIR/config-files
 HADOOP_DIR=$PROJ_DIR/hadoop
 SCALA_DIR=$PROJ_DIR/scala
 SPARK_DIR=$PROJ_DIR/spark
-# if Downloads folder does not exist, create it
+HIBENCH_DIR=/opt/hibench
+SPARK_PERF_DIR=/opt/spark-perf
+BIGBENCH_DIR=/opt/big-bench
+
 if [ ! -d $DOWNLOAD_DIR ]; then
     mkdir $DOWNLOAD_DIR
 fi
-cd $DOWNLOAD_DIR
+
 if [ ! -d $PROJ_DIR ]; then
     mkdir $PROJ_DIR
 fi
 
 
 ## HADOOP
-hadoop -h 2>&1>/dev/null
-if [ $? == 0 ]; then
-    echo 'Hadoop was found'
-else
-    wget http://www.apache.org/dyn/closer.cgi/hadoop/common/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
-    tar -xzf $DOWNLOAD_DIR/hadoop-2.7.5.tar.gz
-    mv hadoop-2.7.5 $HADOOP_DIR
-    if [ -z "$HADOOP_PREFIX" ]; then
-        echo "export HADOOP_PREFIX=$HADOOP_DIR" >> ~/.bashrc
-        echo "export PATH=$PATH:$HADOOP_DIR/bin" >> ~/.bashrc
-        echo "export PATH=$PATH:$HADOOP_DIR/sbin" >> ~/.bashrc
-        echo "export HADOOP_MAPRED_HOME=$HADOOP_DIR" >> ~/.bashrc
-        echo "export HADOOP_COMMON_HOME=$HADOOP_DIR" >> ~/.bashrc
-        echo "export HADOOP_HDFS_HOME=$HADOOP_DIR" >> ~/.bashrc
-        echo "export YARN_HOME=$HADOOP_DIR" >> ~/.bashrc
-        source ~/.bashrc
+CMD_OUTPUT=$(command -v hadoop)
+if [ -z "$CMD_OUTPUT" ]; then
+    echo -e "${YELLOW}Installing Hadoop v2.7.5${NC}"
+    wget http://ftp.tudelft.nl/apache/hadoop/common/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/hadoop-2.7.5.tar.gz -C $DOWNLOAD_DIR
+    if [ ! -d $HADOOP_DIR ]; then
+        mkdir $HADOOP_DIR
     fi
-
-    #create directory for hadoop to store files
-    mkdir -p /home/$USER/hadoop_data
-    mkdir -p /home/$USER/hadoop_data/hdfs/namenode
-    mkdir -p /home/$USER/hadoop_data/hdfs/datanode
-    # copy configuration files for hadoop 
-    cp $CONF_FILES_DIR/core-site.xml $HADOOP_DIR/conf
-    cp $CONF_FILES_DIR/mapred-site.xml $HADOOP_DIR/conf
-    cp $CONF_FILES_DIR/hdfs-site.xml $HADOOP_DIR/conf
-#    mv $HADOOP_DIR/conf/hadoop-env.sh.template $HADOOP_DIR/conf/hadoop-env.sh
-    #set JAVA_HOME in hadoop config file
-    echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> $HADOOP_DIR/conf/hadoop-env.sh
-    # Format the name node
+    mv $DOWNLOAD_DIR/hadoop-2.7.5/* $HADOOP_DIR
+    if [ -z "$HADOOP_PREFIX" ]; then
+        echo "export HADOOP_PREFIX=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export HADOOP_MAPRED_HOME=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export HADOOP_COMMON_HOME=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export HADOOP_HDFS_HOME=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export YARN_HOME=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export PATH=$PATH:$HADOOP_DIR/bin:$HADOOP_DIR/sbin" >> $ENVIRONMENT
+        source $ENVIRONMENT
+    fi
+    echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh
     chmod -R 777 $HADOOP_DIR
-    hadoop namenode -format
-
-    echo "***** HADOOP DONE! *****"
-
+    echo -e "${GREEN}***** HADOOP DONE! *****${NC}"
+else
+    echo -e "${GREEN}Hadoop was found${NC}"
+    HADOOP_DIR=$HADOOP_COMMON_HOME
 fi
+yes | cp -a ./conf/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
+
 
 ## SCALA
-scalac -help 2>&1>/dev/null
-if [ $? == 0  ]; then
-    echo 'Scala was found'
+scalac -help >/dev/null 2>&1
+if [ $? == 0 ]; then
+    echo -e "${GREEN}Scala was found${NC}"
 else
-    # download the src for hadoop, scala and spark
-    wget https://github.com/scala/scala/archive/v2.11.12.tar.gz -P $DOWNLOAD_DIR
-    #Extract hadoop and Scala
-    tar -zxf v2.11.12.tar.gz
-    mv scala-2.11.12 $SCALA_DIR
+    echo -e "${YELLOW}Installing Scala v2.11.12${NC}"
+    wget https://downloads.lightbend.com/scala/2.11.12/scala-2.11.12.tgz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/scala-2.11.12.tgz -C $DOWNLOAD_DIR
+    if [ ! -d $SCALA_DIR ]; then
+        mkdir $SCALA_DIR
+    fi
+    mv $DOWNLOAD_DIR/scala-2.11.12/* $SCALA_DIR
     chmod -R 777 $SCALA_DIR
-    echo "***** Now Copying Scala *****"
-    echo "export SCALA_HOME=$SCALA_DIR" >> ~/.bashrc
-    echo "export PATH=$PATH:$SCALA_DIR/bin" >> ~/.bashrc
-    source ~/.bashrc
+    if [ -z "$SCALA_HOME" ]; then
+        echo "export SCALA_HOME=$SCALA_DIR" >> $ENVIRONMENT
+        echo "export PATH=$PATH:$SCALA_DIR/bin" >> $ENVIRONMENT
+        source $ENVIRONMENT
+    fi
+    echo -e "${GREEN}***** SCALA DONE! *****${NC}"
 fi
 
+
 ## SPARK
-#wget http://www.spark-project.org/download/spark-0.7.3-sources.tgz -P $DOWNLOAD_DIR
-wget http://apache.mirror.triple-it.nl/spark/spark-2.2.1/spark-2.2.1-bin-hadoop2.7.tgz -P $DOWNLOAD_DIR
-tar -xzf $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7.tgz
-# Now build Spark
-cp -R $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7 $SPARK_DIR
+CMD_OUTPUT=$(command -v spark-submit)
+if [ -z "$CMD_OUTPUT" ]; then
+    echo -e "${YELLOW}Installing Spark v2.2.1${NC}"
+    wget http://apache.mirror.triple-it.nl/spark/spark-2.2.1/spark-2.2.1-bin-hadoop2.7.tgz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7.tgz -C $DOWNLOAD_DIR/
+    if [ ! -d $SPARK_DIR ]; then
+        mkdir $SPARK_DIR
+    fi
+    mv $DOWNLOAD_DIR/spark-2.2.1-bin-hadoop2.7/* $SPARK_DIR
+    chmod -R 777 $SPARK_DIR
+    if [ -z "$SPARK_HOME" ]; then
+        echo "export SPARK_HOME=$SPARK_DIR" >> $ENVIRONMENT
+        echo "export PATH=$PATH:$SPARK_DIR/bin:$SPARK_DIR/sbin" >> $ENVIRONMENT
+        source $ENVIRONMENT
+    fi
+    source $ENVIRONMENT
+    echo -e "${GREEN}*********** Spark Done ************${NC}"
+else
+    echo -e "${GREEN}Spark was found${NC}"
+    SPARK_DIR=$SPARK_HOME
+fi
+cp -a $SPARK_DIR/conf/spark-env.sh.template $SPARK_DIR/conf/spark-env.sh
+echo "HADOOP_CONF_DIR=$HADOOP_DIR/etc/hadoop" >> $SPARK_DIR/conf/spark-env.sh
 
-mv $SPARK_DIR/conf/spark-env.sh.template $SPARK_DIR/conf/spark-env.sh
-echo "export SCALA_HOME=$SCALA_DIR" >> $SPARK_DIR/conf/spark-env.sh
 
-#set hadoop version in spark build
-sed -i 's|1.0.4|2.2.0|' $SPARK_DIR/project/SparkBuild.scala
-echo "SPARK_YARN=true" | tee -a $SPARK_DIR/project/SparkBuild.scala
-cd $SPARK_DIR
-sbt/sbt assembly
-echo "*********** Spark Done ************"
+## sbt, Maven
+echo -e "${YELLOW}Installing sbt and Maven${NC}"
+apt install sbt maven
+echo -e "${GREEN}*********** sbt and Maven Done ************${NC}"
+
+
+## HiBench
+echo -e "${YELLOW}Installing HiBench${NC}"
+rm -rf $HIBENCH_DIR
+mkdir $HIBENCH_DIR
+wget https://github.com/intel-hadoop/HiBench/archive/HiBench-7.0.tar.gz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/HiBench-7.0.tar.gz -C $DOWNLOAD_DIR/
+mv $DOWNLOAD_DIR/HiBench-HiBench-7.0/* $HIBENCH_DIR
+cd $HIBENCH_DIR
+mvn -Psparkbench -Dspark=2.2 -Dscala=2.11 clean package
+touch $HIBENCH_DIR/conf/hadoop.conf
+echo "hibench.hadoop.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/hadoop.conf
+echo "hibench.hadoop.executable   $HADOOP_DIR/bin/hadoop" >> $HIBENCH_DIR/conf/hadoop.conf
+echo "hibench.hadoop.configure.dir   $HADOOP_DIR/etc/hadoop" >> $HIBENCH_DIR/conf/hadoop.conf
+echo "hibench.hadoop.release   apache" >> $HIBENCH_DIR/conf/hadoop.conf
+echo "hibench.hdfs.master   hdfs://{{master_hostname}}:9000" >> $HIBENCH_DIR/conf/hadoop.conf
+touch $HIBENCH_DIR/conf/spark.conf
+echo "hibench.spark.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/spark.conf
+echo "hibench.spark.master   spark://{{master_hostname}}:7077" >> $HIBENCH_DIR/conf/spark.conf
+echo "hibench.spark.version   spark2.2" >> $HIBENCH_DIR/conf/spark.conf
+echo -e "${GREEN}*********** HiBench Done ************${NC}"
+
+
+## Bandwidth throttler
+echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
+rm -rf /opt/bandwidth-throttler
+cd /opt
+git clone https://github.com/ovedanner/bandwidth-throttler.git
+echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 

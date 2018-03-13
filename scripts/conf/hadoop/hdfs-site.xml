@@ -1,0 +1,6 @@
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>{{num_workers}}</value>
+    </property>
+</configuration>
