@@ -3,14 +3,14 @@ NC='\033[0m' # no color
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 
-#sudo apt-get install -f
-#sudo apt-get update
-#sudo apt-get -y upgrade
+sudo apt-get install -f
+sudo apt-get update
+sudo apt-get -y upgrade
 
 ## Git
-echo -e "${YELLOW}Installing Git${NC}"
-apt install git
-echo -e "${GREEN}*********** Git Done ************${NC}"
+echo -e "${YELLOW}Installing Development Tools${NC}"
+apt install gcc make flex bison byacc git sbt maven
+echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
 echo -e "${YELLOW}Installing Python and required libraries${NC}"
@@ -135,12 +135,6 @@ cp -a $SPARK_DIR/conf/spark-env.sh.template $SPARK_DIR/conf/spark-env.sh
 echo "HADOOP_CONF_DIR=$HADOOP_DIR/etc/hadoop" >> $SPARK_DIR/conf/spark-env.sh
 
 
-## sbt, Maven
-echo -e "${YELLOW}Installing sbt and Maven${NC}"
-apt install sbt maven
-echo -e "${GREEN}*********** sbt and Maven Done ************${NC}"
-
-
 ## HiBench
 echo -e "${YELLOW}Installing HiBench${NC}"
 rm -rf $HIBENCH_DIR
@@ -162,11 +156,18 @@ echo "hibench.spark.master   spark://{{master_hostname}}:7077" >> $HIBENCH_DIR/c
 echo "hibench.spark.version   spark2.2" >> $HIBENCH_DIR/conf/spark.conf
 echo -e "${GREEN}*********** HiBench Done ************${NC}"
 
+cd /opt
 
 ## Bandwidth throttler
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
-cd /opt
 git clone https://github.com/ovedanner/bandwidth-throttler.git
+echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
+
+## TPC-DS
+echo -e "${YELLOW}Preparing TPC-DS${NC}"
+rm -rf /opt/spark-tpc-ds-performance-test
+git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
+sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
