@@ -1,11 +1,46 @@
 #!/usr/bin/python
 
-
 from subprocess import Popen, PIPE
 import argparse
+import os
+import paramiko
 import re
 import sys
 import conf.defaults as defaults
+
+
+pkey = paramiko.RSAKey.from_private_key(os.path.expanduser("~/.ssh/id_rsa"))
+
+
+def ReplaceInFile(file, d):
+    f = open(file, 'r')
+    contents = f.read()
+    f.close()
+
+    for s in d:
+        contents.replace(s, d[s])
+
+    f = open(file, 'w')
+    f.write(contents)
+
+
+def IssueSSHCommands(slaves_list, commands, remote_username):
+    try:
+        for ip in slaves_list:
+            ssh = paramiko.SSHClient()
+            ssh.connect(ip, username=remote_username, pkey=pkey)
+            channel = ssh.invoke_shell()
+            stdin = channel.makefile('wb')
+            stdout = channel.makefile('rb')
+
+            stdin.write(commands)
+            print(stdout.read())
+
+            stdout.close()
+            stdin.close()
+            channel.close()
+    except:
+        raise
 
 
 def GetOrGeneratePubKey(master_ip, username, verbose):
@@ -69,7 +104,7 @@ def Scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
 
 def SpawnSlaves(cluster_name, slave_template, num_slaves):
 
-    slaves_list = {}
+    slaves_dict = {}
 
     print("Creating Slave Nodes...")
     try:
@@ -85,14 +120,87 @@ def SpawnSlaves(cluster_name, slave_template, num_slaves):
                             stdout=PIPE).communicate()[0]
             ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
 
-            slaves_list[slave_id] = ip_list[0]
-        print(slaves_list)
+            # slaves_dict[slave_id] = ip_list[0]
+            slaves_dict[slave_id] = ip_list[0]
+        print(slaves_dict)
 
     except:
         raise
 
     print("Slaves Spawned...")
-    return slaves_list
+    return slaves_dict
+
+
+def SetupHostsFile(master_ip, slaves_dict, remote_username):
+    print("Editing hosts file")
+
+    ssh_commands = ''
+
+    try:
+        s = "%s\tmaster" % master_ip
+        ssh_commands += "cat %s >> /etc/hosts\n" % s
+        for slave in slaves_dict.iterkeys():
+            s = "%s\t%s" % (slaves_dict[slave], slave)
+            ssh_commands += "cat %s >> /etc/hosts\n" % s
+        IssueSSHCommands(slaves_dict.values(), remote_username)
+    except:
+        raise
+
+
+def ConfigureHadoop(hadoop_dir, master_hostname, slaves_list, remote_username):
+    replacements = {'{{master_hostname}}': master_hostname, '{{num_workers}}': str(len(slaves_list))}
+
+    ssh_commands = ''
+    ssh_commands += 'cd %s\n' % hadoop_dir
+
+    for r in replacements:
+        ssh_commands += 'sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
+
+    IssueSSHCommands(slaves_list, ssh_commands, remote_username)
+
+
+def configure_spark(spark_dir, master_hostname, slaves_dict, remote_username):
+    conf_file = os.path.join(spark_dir, 'spark-env.sh')
+    replacements = {'{{master_hostname}}': master_hostname}
+    ssh_commands = 'cd %s\n' % spark_dir
+    ssh_commands += 'touch slaves\n'
+
+    for ip in slaves_dict.values():
+        ssh_commands += 'cat %s >> slaves\n' % ip
+
+    for r in replacements:
+        ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], conf_file)
+
+    IssueSSHCommands(slaves_dict.values(), ssh_commands, remote_username)
+
+
+def configure_hibench(hibench_dir, master_hostname, slaves_list, remote_username):
+    ssh_commands = ''
+    replacements = {'{{master_hostname}}': master_hostname}
+    f = os.path.join(hibench_dir, '/conf/hadoop.conf')
+
+    for r in replacements:
+        ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], f)
+    IssueSSHCommands(slaves_list, ssh_commands, remote_username)
+
+
+def format_namenode(hadoop_dir):
+    script = os.path.join(hadoop_dir, '/bin/hadoop')
+    c = Popen([script, 'namenode', '-format'], stdout=PIPE).communicate()[0]
+
+
+def start_hadoop(hadoop_dir):
+    start_dfs = os.path.join(hadoop_dir, '/sbin/start-dfs.sh')
+    start_yarn = os.path.join(hadoop_dir, '/sbin/start-yarn.sh')
+    c = Popen([start_dfs], stdout=PIPE).communicate()[0]
+    c = Popen([start_yarn], stdout=PIPE).communicate()[0]
+
+
+def start_spark(spark_dir):
+    start = os.path.join(spark_dir, '/sbin/start-all.sh')
+    c = Popen([start], stdout=PIPE).communicate()[0]
 
 
 def CheckArgs(args):
@@ -163,11 +271,13 @@ def main():
 # set variables
     cluster_name = args.cluster_name
     num_slaves = args.num_slaves
+    master_hostname = defaults.master_hostname
     master_ip = args.master_ip
     verbose = args.verbose
     dryrun = args.dryrun
     filename = defaults.filename
     slave_template = defaults.slave_template
+    hadoop_dir = defaults.hadoop_dir
     spark_dir = defaults.spark_dir
     remote_username = defaults.remote_username
 
@@ -178,6 +288,7 @@ def main():
         print("Master IP: " + str(master_ip))
         print("Number of Slaves: " + str(num_slaves))
         print("Slave template: " + str(slave_template))
+        print("Hadoop Dir on Master: " + str(hadoop_dir))
         print("Spark Dir on Master: " + str(spark_dir))
         print("\n")
         sys.exit(0)
@@ -214,6 +325,8 @@ def main():
     slave_file = open(filename, "w")
     for host in slave_hostnames:
         slave_file.write(host + "\n")
+
+    slave_hostnames.append(master_hostname)
 
 # move slaves file to master's spark conf directory
     Scp(master_ip, remote_username, filename, spark_dir, verbose)

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-
+# hostname of master VM
+master_hostname = "alex"
 # IP address of master VM (string)
 master_ip = "10.140.0.166"
 # number of slaves to create (integer)
@@ -13,5 +14,7 @@ slave_template = "476"
 filename = "/tmp/slaves"
 # remote username on master e.g. admin or root
 remote_username = "alex"
+# hadoop installation directory
+hadoop_dir = "/usr/local/hadoop-2.7.5/"
 # conf files directory for spark
 spark_dir = "/home/" + remote_username + "/spark/spark/conf/"
