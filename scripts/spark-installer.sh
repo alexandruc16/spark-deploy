@@ -21,6 +21,10 @@ echo -e "${GREEN}*********** Python Done ************${NC}"
 DOWNLOAD_DIR=~/Downloads
 ENVIRONMENT=/etc/environment
 source $ENVIRONMENT
+SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $SRC_DIR
+cd ../config-files
+CONFIG_DIR="$(pwd)"
 
 
 ## JAVA
@@ -84,7 +88,7 @@ else
     echo -e "${GREEN}Hadoop was found${NC}"
     HADOOP_DIR=$HADOOP_COMMON_HOME
 fi
-yes | cp -a ./conf/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
+yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
 
 
 ## SCALA
