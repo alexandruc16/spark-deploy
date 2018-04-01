@@ -220,7 +220,7 @@ else
     echo -e "${GREEN}Spark was found${NC}"
     SPARK_DIR=$SPARK_HOME
 fi
-cp -a $SPARK_DIR/conf/spark-env.sh.template $SPARK_DIR/conf/spark-env.sh
+cp -a $CONFIG_DIR/spark/spark-env.sh $SPARK_DIR/conf/spark-env.sh
 echo "HADOOP_CONF_DIR=$HADOOP_DIR/etc/hadoop" >> $SPARK_DIR/conf/spark-env.sh
 
 
