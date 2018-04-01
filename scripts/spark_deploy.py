@@ -12,7 +12,7 @@ import conf.defaults as defaults
 pkey = paramiko.RSAKey.from_private_key(os.path.expanduser("~/.ssh/id_rsa"))
 
 
-def ReplaceInFile(file, d):
+def replace_in_file(file, d):
     f = open(file, 'r')
     contents = f.read()
     f.close()
@@ -24,8 +24,10 @@ def ReplaceInFile(file, d):
     f.write(contents)
 
 
-def IssueSSHCommands(slaves_list, commands, remote_username):
+def issue_ssh_commands(slaves_list, commands, remote_username, run_local_too=False):
     try:
+        if run_local_too is true:
+            slaves_list.append("localhost")
         for ip in slaves_list:
             ssh = paramiko.SSHClient()
             ssh.connect(ip, username=remote_username, pkey=pkey)
@@ -43,7 +45,7 @@ def IssueSSHCommands(slaves_list, commands, remote_username):
         raise
 
 
-def GetOrGeneratePubKey(master_ip, username, verbose):
+def get_or_generate_public_key(master_ip, username, verbose):
     try:
         out = Popen(["./master_keys.sh", master_ip, username], stdout = PIPE,
                     stderr = PIPE).communicate()[0].strip("\n")
@@ -59,7 +61,7 @@ def GetOrGeneratePubKey(master_ip, username, verbose):
         raise
 
 
-def UpdateMasterPubKey(master_ssh_key, verbose):
+def update_master_public_key(master_ssh_key, verbose):
 
     master_ssh_key = "'Master_SSH_KEY=" + "\"" + master_ssh_key + "\"'"
     try:
@@ -83,7 +85,7 @@ def UpdateMasterPubKey(master_ssh_key, verbose):
         raise
 
 
-def Scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
+def scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
 
     try:
         dest = remote_username + "@" + vm_ip + ":" + spark_dir
@@ -102,8 +104,7 @@ def Scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
         raise
 
 
-def SpawnSlaves(cluster_name, slave_template, num_slaves):
-
+def spawn_slaves(cluster_name, slave_template, num_slaves):
     slaves_dict = {}
 
     print("Creating Slave Nodes...")
@@ -131,7 +132,7 @@ def SpawnSlaves(cluster_name, slave_template, num_slaves):
     return slaves_dict
 
 
-def SetupHostsFile(master_ip, slaves_dict, remote_username):
+def set_up_hosts_file(master_ip, slaves_dict, remote_username):
     print("Editing hosts file")
 
     ssh_commands = ''
@@ -142,12 +143,12 @@ def SetupHostsFile(master_ip, slaves_dict, remote_username):
         for slave in slaves_dict.iterkeys():
             s = "%s\t%s" % (slaves_dict[slave], slave)
             ssh_commands += "cat %s >> /etc/hosts\n" % s
-        IssueSSHCommands(slaves_dict.values(), remote_username)
+        issue_ssh_commands(slaves_dict.values(), remote_username, run_local_too=True)
     except:
         raise
 
 
-def ConfigureHadoop(hadoop_dir, master_hostname, slaves_list, remote_username):
+def configure_hadoop(hadoop_dir, master_hostname, slaves_list, remote_username):
     replacements = {'{{master_hostname}}': master_hostname, '{{num_workers}}': str(len(slaves_list))}
 
     ssh_commands = ''
@@ -158,7 +159,7 @@ def ConfigureHadoop(hadoop_dir, master_hostname, slaves_list, remote_username):
         ssh_commands += 'sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
         ssh_commands += 'sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
 
-    IssueSSHCommands(slaves_list, ssh_commands, remote_username)
+    issue_ssh_commands(slaves_list, ssh_commands, remote_username, run_local_too=True)
 
 
 def configure_spark(spark_dir, master_hostname, slaves_dict, remote_username):
@@ -173,7 +174,7 @@ def configure_spark(spark_dir, master_hostname, slaves_dict, remote_username):
     for r in replacements:
         ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], conf_file)
 
-    IssueSSHCommands(slaves_dict.values(), ssh_commands, remote_username)
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, run_local_too=True)
 
 
 def configure_hibench(hibench_dir, master_hostname, slaves_list, remote_username):
@@ -183,7 +184,7 @@ def configure_hibench(hibench_dir, master_hostname, slaves_list, remote_username
 
     for r in replacements:
         ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], f)
-    IssueSSHCommands(slaves_list, ssh_commands, remote_username)
+    issue_ssh_commands(slaves_list, ssh_commands, remote_username, run_local_too=True)
 
 
 def format_namenode(hadoop_dir):
@@ -203,7 +204,7 @@ def start_spark(spark_dir):
     c = Popen([start], stdout=PIPE).communicate()[0]
 
 
-def CheckArgs(args):
+def check_args(args):
     try:
         args.num_slaves = int(args.num_slaves)
         args.cluster_name = str(args.cluster_name)
@@ -265,7 +266,7 @@ def main():
     args = parser.parse_args()
 
 # Verify arguments
-    args = CheckArgs(args)
+    args = check_args(args)
 
 # If args verified and there were no errors
 # set variables
@@ -293,10 +294,10 @@ def main():
         print("\n")
         sys.exit(0)
 # Get the Master's public key
-    master_key = GetOrGeneratePubKey(master_ip, remote_username, verbose)
+    master_key = get_or_generate_public_key(master_ip, remote_username, verbose)
     print("\n")
     print("******** Got the master's SSH key **********")
-    update_status = UpdateMasterPubKey(master_key, verbose)
+    update_status = update_master_public_key(master_key, verbose)
     if "ERROR" in update_status:
         print update_status
         sys.exit(0)
@@ -314,7 +315,7 @@ def main():
         print("Ok, Exit...")
         sys.exit(0)
 
-    slaves_dict = SpawnSlaves(cluster_name, slave_template, num_slaves)
+    slaves_dict = spawn_slaves(cluster_name, slave_template, num_slaves)
     slave_hostnames = []
     print("\n")
     for slave_id, hostname in slaves_dict.items():
@@ -329,7 +330,7 @@ def main():
     slave_hostnames.append(master_hostname)
 
 # move slaves file to master's spark conf directory
-    Scp(master_ip, remote_username, filename, spark_dir, verbose)
+    scp(master_ip, remote_username, filename, spark_dir, verbose)
 
     print("\n")
     print("*********** All Slaves Created *************")
@@ -341,3 +342,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

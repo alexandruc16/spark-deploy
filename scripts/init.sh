@@ -171,7 +171,7 @@ if [ -z "$CMD_OUTPUT" ]; then
     echo -e "${GREEN}***** HADOOP DONE! *****${NC}"
 else
     echo -e "${GREEN}Hadoop was found${NC}"
-    HADOOP_DIR=$HADOOP_COMMON_HOME
+    HADOOP_DIR=$CMD_OUTPUT
 fi
 yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
 
