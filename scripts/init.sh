@@ -2,6 +2,91 @@
 NC='\033[0m' # no color
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+NET_INTERFACE_NAME=$(ls -1 /sys/class/net | head -1)
+
+# Part of the code below is intellectual property of O.A. Danner (o.a.danner@student.vu.nl)
+# Function that launches the given command and retries it until it fails.
+function launch_and_retry {
+	"$@"
+	local status=$?
+	while [ $status -ne 0 ]; do
+		sleep 1
+		echo "Could not launch $@, retrying" >> /home/$USERNAME/contextualization.log
+		"$@"
+		local status=$?
+	done
+}
+
+if [ -f /mnt/context.sh ]
+then
+  . /mnt/context.sh
+fi
+
+# Set hostname
+echo $HOSTNAME > /etc/hostname
+hostname $HOSTNAME
+sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1	$HOSTNAME/" /etc/hosts
+
+# Set up SSH
+if [ -f /mnt/$ROOT_PUBKEY ]; then
+	mkdir -p /root/.ssh
+	cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
+	 chmod -R 600 /root/.ssh/
+	chmod 600 /root/.ssh/authorized_keys
+	chmod 700 /root/.ssh
+fi
+
+if [ -n "$USERNAME" ]; then
+	useradd -s /bin/bash -m $USERNAME
+	echo "$USERNAME:1234" | chpasswd
+	sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
+	sed -i "s/.*MaxStartups.*/Maxstartups 10000/" /etc/ssh/sshd_config
+	sed -i "s/.*StrictHostKeyChecking.*/StrictHostKeyChecking no/" /etc/ssh/ssh_config
+	service ssh restart
+	if [ -f /mnt/$USER_PUBKEY ]; then
+		mkdir -p /home/$USERNAME/.ssh/
+		cat /mnt/$USER_PUBKEY >> /home/$USERNAME/.ssh/authorized_keys
+		chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+		# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
+		chmod 600 /home/$USERNAME/.ssh/authorized_keys
+
+		# add sudo to look around on system:
+		echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
+		# check:
+		cp /etc/sudoers /etc/sudoers.copy
+		chmod 644 /etc/sudoers.copy
+	fi
+fi
+
+touch /home/$USERNAME/contextualization.log
+echo "Hostname is : $HOSTNAME" >> /home/$USERNAME/contextualization.log
+echo "Netmask is : $NETMASK" >> /home/$USERNAME/contextualization.log
+echo "Gateway is : $GATEWAY" >> /home/$USERNAME/contextualization.log
+echo "DNS is : $DNS" >> /home/$USERNAME/contextualization.log
+
+# Not sure if setting the DNS this way does anything..
+if [ -n "$DNS" ]; then
+        echo "Setting DNS server to $DNS" >>/var/log/context.log
+        echo "nameserver $DNS" >/etc/resolv.conf
+fi
+
+# Set correct IP address
+# Afterwards, we can set the correct netmask.
+if [ -n "$NETMASK" ]; then
+	ifconfig $NET_INTERFACE_NAME $IP_PUBLIC
+	echo "SETTING NETMASK: $NETMASK\n" >> /var/log/netmask.log
+	ifconfig $NET_INTERFACE_NAME netmask $NETMASK &>> /var/log/netmask.log
+else
+	echo "NETMASK DOES NOT EXIST\n" >> /var/log/netmask.log
+fi
+
+# Add the gateway.
+if [ -n "$GATEWAY" ]; then
+	echo "SETTING GATEWAY: $GATEWAY\n" >> /var/log/netmask.log
+	route add default gw $GATEWAY
+else
+	echo "GATEWAY DOES NOT EXIST\n" >> /var/log/netmask.log
+fi
 
 sudo apt-get install -f
 sudo apt-get update
@@ -148,13 +233,13 @@ tar -xzf $DOWNLOAD_DIR/HiBench-7.0.tar.gz -C $DOWNLOAD_DIR/
 mv $DOWNLOAD_DIR/HiBench-HiBench-7.0/* $HIBENCH_DIR
 cd $HIBENCH_DIR
 mvn -Psparkbench -Dspark=2.2 -Dscala=2.11 clean package
+yes | cp -a $CONFIG_DIR/hibench/* $HIBENCH_DIR/conf/
 touch $HIBENCH_DIR/conf/hadoop.conf
 echo "hibench.hadoop.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/hadoop.conf
 echo "hibench.hadoop.executable   $HADOOP_DIR/bin/hadoop" >> $HIBENCH_DIR/conf/hadoop.conf
 echo "hibench.hadoop.configure.dir   $HADOOP_DIR/etc/hadoop" >> $HIBENCH_DIR/conf/hadoop.conf
 echo "hibench.hadoop.release   apache" >> $HIBENCH_DIR/conf/hadoop.conf
 echo "hibench.hdfs.master   hdfs://{{master_hostname}}:9000" >> $HIBENCH_DIR/conf/hadoop.conf
-touch $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.master   spark://{{master_hostname}}:7077" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.version   spark2.2" >> $HIBENCH_DIR/conf/spark.conf
