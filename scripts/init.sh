@@ -92,14 +92,17 @@ sudo apt-get install -f
 sudo apt-get update
 sudo apt-get -y upgrade
 
-## Git
+## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
-apt install gcc make flex bison byacc git sbt maven
+echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
+sudp apt-get update
+sudo apt-get -y install gcc make flex bison byacc git sbt maven
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
 echo -e "${YELLOW}Installing Python and required libraries${NC}"
-apt install python2.7 python-pip
+sudo apt-get -y install python2.7 python-pip
 pip2 install paramiko pyzmq psutil
 echo -e "${GREEN}*********** Python Done ************${NC}"
 
