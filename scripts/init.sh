@@ -260,3 +260,9 @@ git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
+## Benchmark scripts
+echo -e "${YELLOW}Preparing benchmark scripts${NC}"
+rm -rf /opt/spark-deploy
+git clone https://github.com/alexandruc16/spark-deploy.git
+echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
+
