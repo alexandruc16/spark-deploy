@@ -88,23 +88,23 @@ else
 	echo "GATEWAY DOES NOT EXIST\n" >> /var/log/netmask.log
 fi
 
-sudo apt-get install -f &>> /var/log/context.log
-sudo apt-get update &>> /var/log/context.log
-sudo apt-get -y upgrade &>> /var/log/context.log
+sudo apt-get install -f
+sudo apt-get update
+sudo apt-get -y upgrade
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
+sudo apt-get -y install gcc make flex bison byacc git maven
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 &>> /var/log/context.log
 sudp apt-get update &>> /var/log/context.log
-sudo apt-get -y install gcc make flex bison byacc git maven &>> /var/log/context.log
 sudo apt-get -y install sbt &>> /var/log/context.log
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
 echo -e "${YELLOW}Installing Python and required libraries${NC}"
-sudo apt-get -y install python2.7 python-pip &>> /var/log/context.log
-pip2 install paramiko pyzmq psutil &>> /var/log/context.log
+sudo apt-get -y install python2.7 python-pip
+pip2 install paramiko pyzmq psutil
 echo -e "${GREEN}*********** Python Done ************${NC}"
 
 
@@ -116,7 +116,7 @@ source $ENVIRONMENT
 echo -e "${YELLOW}Preparing benchmark scripts${NC}"
 cd /opt
 rm -rf /opt/spark-deploy
-git clone https://github.com/alexandruc16/spark-deploy.git &>> /var/log/context.log
+git clone https://github.com/alexandruc16/spark-deploy.git
 cd spark-deploy/scripts
 SRC_DIR="$(pwd)"
 cd ../config-files
@@ -271,4 +271,5 @@ git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
+echo "Finished installing packages" >> /var/log/context.log
 
