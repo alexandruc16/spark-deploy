@@ -16,5 +16,7 @@ filename = "/tmp/slaves"
 remote_username = "alex"
 # hadoop installation directory
 hadoop_dir = "/usr/local/hadoop-2.7.5/"
-# conf files directory for spark
-spark_dir = "/home/" + remote_username + "/spark/spark/conf/"
+# Spark installation directory
+spark_dir = "/usr/local/spark/"
+# Hibench installation directory
+hibench_conf_dir = "/opt/hibench/"
