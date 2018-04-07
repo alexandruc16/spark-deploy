@@ -359,7 +359,7 @@ def main():
     for host in slave_hostnames:
         slave_file.write(host + "\n")
 
-    slave_hostnames.append(master_hostname)
+    slave_hostnames.append(master_ip)
 
 # move slaves file to master's spark conf directory
     scp(master_ip, remote_username, filename, spark_dir, verbose)

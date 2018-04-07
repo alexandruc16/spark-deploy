@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 # hostname of master VM
-master_hostname = "alex"
+master_hostname = "alex-VM"
 # IP address of master VM (string)
-master_ip = "10.140.0.166"
+master_ip = "10.140.0.133"
 # number of slaves to create (integer)
 num_slaves = 2
 # unique name for the cluster (string)
