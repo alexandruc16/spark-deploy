@@ -49,11 +49,11 @@ fi
 
 # Set up SSH
 if [ -f /mnt/$ROOT_PUBKEY ]; then
-	mkdir -p /root/.ssh
-	cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
-	chmod -R 600 /root/.ssh/
-	chmod 600 /root/.ssh/authorized_keys
-	chmod 700 /root/.ssh
+	sudo mkdir -p /root/.ssh
+	sudo cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
+	sudo chmod -R 600 /root/.ssh/
+	sudo chmod 600 /root/.ssh/authorized_keys
+	sudo chmod 700 /root/.ssh
 fi
 
 touch /home/$USERNAME/contextualization.log
