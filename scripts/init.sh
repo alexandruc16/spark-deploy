@@ -19,9 +19,12 @@ function launch_and_retry {
 
 # Disable SSH while setting up
 sudo service ssh stop &>> /var/log/context.log
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)"
+PUBKEY_PATH=$(find $SRC_DIR -iname $ROOT_PUBKEY)
 
-PUBKEY_PATH=$(find /media -iname $ROOT_PUBKEY)
+echo "Src dir is $SRC_DIR" >> /var/log/context.log
 echo "Pubkey path is $PUBKEY_PATH" >> /var/log/context.log
+
 if [ -n "$USERNAME" ]; then
 	useradd -s /bin/bash -m $USERNAME
 	echo "$USERNAME:1234" | chpasswd
@@ -114,7 +117,6 @@ cd /opt
 rm -rf /opt/spark-deploy
 git clone https://github.com/alexandruc16/spark-deploy.git
 cd spark-deploy/scripts
-SRC_DIR="$(pwd)"
 cd ../config-files
 CONFIG_DIR="$(pwd)"
 echo -e "${GREEN}*********** Benchmarking Scripts Done ************${NC}"
