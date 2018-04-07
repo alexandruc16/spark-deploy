@@ -25,15 +25,6 @@ fi
 # Disable SSH while setting up
 sudo service ssh stop &>> /var/log/context.log
 
-# Set up SSH
-if [ -f /mnt/$ROOT_PUBKEY ]; then
-	mkdir -p /root/.ssh
-	cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
-	 chmod -R 600 /root/.ssh/
-	chmod 600 /root/.ssh/authorized_keys
-	chmod 700 /root/.ssh
-fi
-
 if [ -n "$USERNAME" ]; then
 	useradd -s /bin/bash -m $USERNAME
 	echo "$USERNAME:1234" | chpasswd
@@ -54,6 +45,15 @@ if [ -n "$USERNAME" ]; then
 		cp /etc/sudoers /etc/sudoers.copy
 		chmod 644 /etc/sudoers.copy
 	fi
+fi
+
+# Set up SSH
+if [ -f /mnt/$ROOT_PUBKEY ]; then
+	mkdir -p /root/.ssh
+	cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
+	chmod -R 600 /root/.ssh/
+	chmod 600 /root/.ssh/authorized_keys
+	chmod 700 /root/.ssh
 fi
 
 touch /home/$USERNAME/contextualization.log
@@ -92,11 +92,13 @@ sudo apt-get -y upgrade
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
-sudo apt-get -y install gcc make flex bison byacc git maven &>> /var/log/context.log
+INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-sudo apt-get update
-sudo apt-get -y install sbt &>> /var/log/context.log
+sudo apt-get update &>> /var/log/context.log
+for pkg in $INSTALL_PKGS; do
+    sudo apt-get -y install $pkg &>> /var/log/context.log
+done
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
