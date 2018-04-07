@@ -9,7 +9,7 @@ import sys
 from subprocess import Popen, PIPE
 from time import sleep
 
-pkey = paramiko.RSAKey.from_private_key(os.path.expanduser("~/.ssh/id_rsa"))
+pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
 
 def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
