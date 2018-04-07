@@ -27,7 +27,8 @@ sudo service ssh stop &>> /var/log/context.log
 
 # Set hostname
 echo $HOSTNAME > /etc/hostname
-hostname $HOSTNAME
+sudo hostname $HOSTNAME
+sed -i "s/.*127\.0\.0\.1.*/127\.0\.1\.1 localhost $HOSTNAME/" /etc/hosts
 sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1	$HOSTNAME/" /etc/hosts
 
 # Set up SSH
