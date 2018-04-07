@@ -17,13 +17,10 @@ function launch_and_retry {
 	done
 }
 
-if [ -f /mnt/context.sh ]
-then
-  . /mnt/context.sh
-fi
-
 # Disable SSH while setting up
 sudo service ssh stop &>> /var/log/context.log
+
+PUBKEY_PATH=$(find /media -iname $ROOT_PUBKEY)
 
 if [ -n "$USERNAME" ]; then
 	useradd -s /bin/bash -m $USERNAME
@@ -31,10 +28,9 @@ if [ -n "$USERNAME" ]; then
 	sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
 	sed -i "s/.*MaxStartups.*/Maxstartups 10000/" /etc/ssh/sshd_config
 	sed -i "s/.*StrictHostKeyChecking.*/StrictHostKeyChecking no/" /etc/ssh/ssh_config
-	service ssh restart
-	if [ -f /mnt/$USER_PUBKEY ]; then
+	if [ ! -z "$PUBKEY_PATH" ]; then
 		mkdir -p /home/$USERNAME/.ssh/
-		cat /mnt/$USER_PUBKEY >> /home/$USERNAME/.ssh/authorized_keys
+		cat $PUBKEY_PATH >> /home/$USERNAME/.ssh/authorized_keys
 		chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
 		# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
 		chmod 600 /home/$USERNAME/.ssh/authorized_keys
@@ -48,12 +44,12 @@ if [ -n "$USERNAME" ]; then
 fi
 
 # Set up SSH
-if [ -f /mnt/$ROOT_PUBKEY ]; then
-	sudo mkdir -p /root/.ssh
-	sudo cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
-	sudo chmod -R 600 /root/.ssh/
-	sudo chmod 600 /root/.ssh/authorized_keys
-	sudo chmod 700 /root/.ssh
+if [ ! -z "$PUBKEY_PATH" ]; then
+	mkdir -p /root/.ssh
+	cat $PUBKEY_PATH >> /root/.ssh/authorized_keys
+	chmod -R 600 /root/.ssh/
+	chmod 600 /root/.ssh/authorized_keys
+	chmod 700 /root/.ssh
 fi
 
 touch /home/$USERNAME/contextualization.log
