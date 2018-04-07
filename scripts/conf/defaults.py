@@ -19,4 +19,4 @@ hadoop_dir = "/usr/local/hadoop-2.7.5/"
 # Spark installation directory
 spark_dir = "/usr/local/spark/"
 # Hibench installation directory
-hibench_conf_dir = "/opt/hibench/"
+hibench_dir = "/opt/hibench/"
