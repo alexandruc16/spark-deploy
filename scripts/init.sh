@@ -22,6 +22,9 @@ then
   . /mnt/context.sh
 fi
 
+# Disable SSH while setting up
+sudo service ssh stop
+
 # Set hostname
 echo $HOSTNAME > /etc/hostname
 hostname $HOSTNAME
@@ -272,4 +275,7 @@ sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
 echo "Finished installing packages" >> /var/log/context.log
+
+# Restart SSH
+sudo service ssh restart
 
