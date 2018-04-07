@@ -106,6 +106,7 @@ sudo apt-get -y install python2.7 python-pip
 pip2 install paramiko pyzmq psutil
 echo -e "${GREEN}*********** Python Done ************${NC}"
 
+
 DOWNLOAD_DIR=~/Downloads
 ENVIRONMENT=/etc/environment
 source $ENVIRONMENT
@@ -114,6 +115,13 @@ cd $SRC_DIR
 cd ../config-files
 CONFIG_DIR="$(pwd)"
 
+## Benchmark scripts
+echo -e "${YELLOW}Preparing benchmark scripts${NC}"
+cd /opt
+rm -rf /opt/spark-deploy
+git clone https://github.com/alexandruc16/spark-deploy.git
+cd spark-deploy/scripts
+echo -e "${GREEN}*********** Benchmarking Scripts Done ************${NC}"
 
 ## JAVA
 javac -help >/dev/null 2>&1
@@ -261,11 +269,6 @@ echo -e "${YELLOW}Preparing TPC-DS${NC}"
 rm -rf /opt/spark-tpc-ds-performance-test
 git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
-echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
+echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
-## Benchmark scripts
-echo -e "${YELLOW}Preparing benchmark scripts${NC}"
-rm -rf /opt/spark-deploy
-git clone https://github.com/alexandruc16/spark-deploy.git
-echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
