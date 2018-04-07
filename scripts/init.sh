@@ -25,12 +25,6 @@ fi
 # Disable SSH while setting up
 sudo service ssh stop &>> /var/log/context.log
 
-# Set hostname
-echo $HOSTNAME > /etc/hostname
-sudo hostname $HOSTNAME
-sed -i "s/.*127\.0\.0\.1.*/127\.0\.1\.1 localhost $HOSTNAME/" /etc/hosts
-sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1	$HOSTNAME/" /etc/hosts
-
 # Set up SSH
 if [ -f /mnt/$ROOT_PUBKEY ]; then
 	mkdir -p /root/.ssh
@@ -276,6 +270,12 @@ sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
 echo "Finished installing packages" >> /var/log/context.log
+
+# Set hostname
+echo $HOSTNAME > /etc/hostname
+hostname $HOSTNAME
+sed -i "s/.*127\.0\.0\.1.*/127\.0\.0\.1 localhost $HOSTNAME/" /etc/hosts
+sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1 $HOSTNAME/" /etc/hosts
 
 # Restart SSH
 sudo service ssh restart &>> /var/log/context.log
