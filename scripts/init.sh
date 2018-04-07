@@ -19,37 +19,26 @@ function launch_and_retry {
 
 # Disable SSH while setting up
 sudo service ssh stop &>> /var/log/context.log
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)"
-PUBKEY_PATH=$(find $SRC_DIR -iname $ROOT_PUBKEY)
 
-echo "Src dir is $SRC_DIR" >> /var/log/context.log
-echo "Pubkey path is $PUBKEY_PATH" >> /var/log/context.log
-
-if [ -n "$USERNAME" ]; then
+if [ ! -z "$SSH_PUBLIC_KEY" ]; then
 	useradd -s /bin/bash -m $USERNAME
 	echo "$USERNAME:1234" | chpasswd
 	sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
 	sed -i "s/.*MaxStartups.*/Maxstartups 10000/" /etc/ssh/sshd_config
 	sed -i "s/.*StrictHostKeyChecking.*/StrictHostKeyChecking no/" /etc/ssh/ssh_config
-	if [ ! -z "$PUBKEY_PATH" ]; then
-		mkdir -p /home/$USERNAME/.ssh/ &>> /var/log/context.log
-		cat $PUBKEY_PATH >> /home/$USERNAME/.ssh/authorized_keys
-		chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-		# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
-		chmod 600 /home/$USERNAME/.ssh/authorized_keys
+	mkdir -p /home/$USERNAME/.ssh/
+	cat "$SSH_PUBLIC_KEY" >> /home/$USERNAME/.ssh/authorized_keys
+	chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+	# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
+	chmod 600 /home/$USERNAME/.ssh/authorized_keys
 
-		# add sudo to look around on system:
-		echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
-		# check:
-		cp /etc/sudoers /etc/sudoers.copy
-		chmod 644 /etc/sudoers.copy
-	fi
-fi
-
-# Set up SSH
-if [ ! -z "$PUBKEY_PATH" ]; then
+	# add sudo to look around on system:
+	echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
+	# check:
+	cp /etc/sudoers /etc/sudoers.copy
+	chmod 644 /etc/sudoers.copy
 	mkdir -p /root/.ssh
-	cat $PUBKEY_PATH >> /root/.ssh/authorized_keys
+	cat "$SSH_PUBLIC_KEY" >> /root/.ssh/authorized_keys
 	chmod -R 600 /root/.ssh/
 	chmod 600 /root/.ssh/authorized_keys
 	chmod 700 /root/.ssh
