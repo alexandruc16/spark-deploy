@@ -45,6 +45,8 @@ def test_ssh(ips, remote_username):
     while ips_count > 0:
         for ip in ips:
             ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
             try:
                 ssh.connect(ip, username=remote_username, pkey=pkey)
                 nodes_online.append(ip)
