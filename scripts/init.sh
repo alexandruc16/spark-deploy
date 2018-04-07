@@ -21,7 +21,7 @@ function launch_and_retry {
 sudo service ssh stop &>> /var/log/context.log
 
 PUBKEY_PATH=$(find /media -iname $ROOT_PUBKEY)
-
+echo "Pubkey path is $PUBKEY_PATH" >> /var/log/context.log
 if [ -n "$USERNAME" ]; then
 	useradd -s /bin/bash -m $USERNAME
 	echo "$USERNAME:1234" | chpasswd
@@ -29,7 +29,7 @@ if [ -n "$USERNAME" ]; then
 	sed -i "s/.*MaxStartups.*/Maxstartups 10000/" /etc/ssh/sshd_config
 	sed -i "s/.*StrictHostKeyChecking.*/StrictHostKeyChecking no/" /etc/ssh/ssh_config
 	if [ ! -z "$PUBKEY_PATH" ]; then
-		mkdir -p /home/$USERNAME/.ssh/
+		mkdir -p /home/$USERNAME/.ssh/ &>> /var/log/context.log
 		cat $PUBKEY_PATH >> /home/$USERNAME/.ssh/authorized_keys
 		chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
 		# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
@@ -91,9 +91,9 @@ echo -e "${YELLOW}Installing Development Tools${NC}"
 INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-sudo apt-get update &>> /var/log/context.log
+sudo apt-get update
 for pkg in $INSTALL_PKGS; do
-    sudo apt-get -y install $pkg &>> /var/log/context.log
+    sudo apt-get -y install $pkg
 done
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
