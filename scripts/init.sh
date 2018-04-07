@@ -23,7 +23,7 @@ then
 fi
 
 # Disable SSH while setting up
-sudo service ssh stop
+sudo service ssh stop &>> /var/log/context.log
 
 # Set hostname
 echo $HOSTNAME > /etc/hostname
@@ -277,5 +277,5 @@ echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 echo "Finished installing packages" >> /var/log/context.log
 
 # Restart SSH
-sudo service ssh restart
+sudo service ssh restart &>> /var/log/context.log
 
