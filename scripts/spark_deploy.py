@@ -53,7 +53,7 @@ def test_ssh(ips, remote_username):
         
         nodes_online_count = len(nodes_online)
         
-        if len(nodes_online_count) > 0:
+        if nodes_online_count > 0:
             ips = [ip for ip in ips if ip not in nodes_online]
             ips_count = len(ips)
         
@@ -325,18 +325,18 @@ def main():
         print("\n")
         sys.exit(0)
 # Get the Master's public key
-    master_key = get_or_generate_public_key(master_ip, remote_username, verbose)
-    print("\n")
-    print("******** Got the master's SSH key **********")
-    update_status = update_master_public_key(master_key, verbose)
-    if "ERROR" in update_status:
-        print update_status
-        sys.exit(0)
+    #master_key = get_or_generate_public_key(master_ip, remote_username, verbose)
+    #print("\n")
+    #print("******** Got the master's SSH key **********")
+    #update_status = update_master_public_key(master_key, verbose)
+    #if "ERROR" in update_status:
+    #    print update_status
+    #    sys.exit(0)
 
-    if verbose:
-        print(update_status)
-    print("******** Updated master's SSH key **********")
-    print("\n")
+    #if verbose:
+    #    print(update_status)
+    #print("******** Updated master's SSH key **********")
+    #print("\n")
 # Now create the requested number of slaves
 # confirm cluster name
     print("Cluster name will be set to: " + args.cluster_name)
