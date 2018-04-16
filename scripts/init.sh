@@ -248,7 +248,7 @@ cd /opt
 ## Bandwidth throttler
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
-git clone https://github.com/ovedanner/bandwidth-throttler.git
+git clone https://github.com/alexandruc16/bandwidth-throttler.git
 rm -rf /usr/bin/shape_traffic
 mkdir /usr/bin/shape_traffic
 cp /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
