@@ -51,7 +51,7 @@ def test_ssh(ips, remote_username):
                 ssh.connect(ip, username=remote_username, pkey=pkey)
                 nodes_online.append(ip)
             except:
-                print("Failed to connect to " + ip)
+                pass
         
         nodes_online_count = len(nodes_online)
         
