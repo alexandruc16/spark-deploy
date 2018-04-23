@@ -2,7 +2,7 @@
 
 # get masters ip
 MASTER_IP=$1
-MASTER_SSH="ssh -l alex -i $HOME/.ssh/id_rsa $MASTER_IP -o connectTimeout=5"
+MASTER_SSH="ssh -l aca540 -i $HOME/.ssh/id_rsa $MASTER_IP -o connectTimeout=5"
 SSH_TEST=$($MASTER_SSH exit)
 if [ $? == 0 ]; then
     echo "success"

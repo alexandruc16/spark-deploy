@@ -17,45 +17,31 @@ function launch_and_retry {
 	done
 }
 
-if [ -f /mnt/context.sh ]
-then
-  . /mnt/context.sh
-fi
+# Disable SSH while setting up
+sudo service ssh stop &>> /var/log/context.log
 
-# Set hostname
-echo $HOSTNAME > /etc/hostname
-hostname $HOSTNAME
-sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1	$HOSTNAME/" /etc/hosts
-
-# Set up SSH
-if [ -f /mnt/$ROOT_PUBKEY ]; then
-	mkdir -p /root/.ssh
-	cat /mnt/$ROOT_PUBKEY >> /root/.ssh/authorized_keys
-	 chmod -R 600 /root/.ssh/
-	chmod 600 /root/.ssh/authorized_keys
-	chmod 700 /root/.ssh
-fi
-
-if [ -n "$USERNAME" ]; then
+if [ ! -z "$SSH_PUBLIC_KEY" ]; then
 	useradd -s /bin/bash -m $USERNAME
 	echo "$USERNAME:1234" | chpasswd
 	sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
 	sed -i "s/.*MaxStartups.*/Maxstartups 10000/" /etc/ssh/sshd_config
 	sed -i "s/.*StrictHostKeyChecking.*/StrictHostKeyChecking no/" /etc/ssh/ssh_config
-	service ssh restart
-	if [ -f /mnt/$USER_PUBKEY ]; then
-		mkdir -p /home/$USERNAME/.ssh/
-		cat /mnt/$USER_PUBKEY >> /home/$USERNAME/.ssh/authorized_keys
-		chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-		# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
-		chmod 600 /home/$USERNAME/.ssh/authorized_keys
+	mkdir -p /home/$USERNAME/.ssh/
+	cat "$SSH_PUBLIC_KEY" >> /home/$USERNAME/.ssh/authorized_keys
+	chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+	# chmod -R 600 /home/$USERNAME/.ssh/authorized_keys
+	chmod 600 /home/$USERNAME/.ssh/authorized_keys
 
-		# add sudo to look around on system:
-		echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
-		# check:
-		cp /etc/sudoers /etc/sudoers.copy
-		chmod 644 /etc/sudoers.copy
-	fi
+	# add sudo to look around on system:
+	echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
+	# check:
+	cp /etc/sudoers /etc/sudoers.copy
+	chmod 644 /etc/sudoers.copy
+	mkdir -p /root/.ssh
+	cat "$SSH_PUBLIC_KEY" >> /root/.ssh/authorized_keys
+	chmod -R 600 /root/.ssh/
+	chmod 600 /root/.ssh/authorized_keys
+	chmod 700 /root/.ssh
 fi
 
 touch /home/$USERNAME/contextualization.log
@@ -94,11 +80,13 @@ sudo apt-get -y upgrade
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
-sudo apt-get -y install gcc make flex bison byacc git maven
+INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
 sudo apt-get update
-sudo apt-get -y install sbt
+for pkg in $INSTALL_PKGS; do
+    sudo apt-get -y install $pkg
+done
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
@@ -118,7 +106,6 @@ cd /opt
 rm -rf /opt/spark-deploy
 git clone https://github.com/alexandruc16/spark-deploy.git
 cd spark-deploy/scripts
-SRC_DIR="$(pwd)"
 cd ../config-files
 CONFIG_DIR="$(pwd)"
 echo -e "${GREEN}*********** Benchmarking Scripts Done ************${NC}"
@@ -129,15 +116,19 @@ if [ $? == 0 ]; then
     echo -e "${GREEN}Java was found${NC}"
 else
     echo -e "${YELLOW}Installing Oracle JDK v1.8${NC}"
-    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR
-    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz -C $DOWNLOAD_DIR
-    mv $DOWNLOAD_DIR/jdk1.8.0_161 /usr/lib
-    if [ -z "$JAVA_HOME" ]; then
-        echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> $ENVIRONMENT
-        echo "export PATH=$PATH:/usr/lib/jdk1.8.0_161/bin" >> $ENVIRONMENT
-        source $ENVIRONMENT
+    wget_output=$(wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/jdk-8u171-linux-x64.tar.gz -P $DOWNLOAD_DIR)
+    if [ $? -ne 0 ]; then
+        echo "Failed to download Oracle JDK. Please install manually." >> /var/log/context.log
+    else
+        tar -xzf $DOWNLOAD_DIR/jdk-8u171-linux-x64.tar.gz -C $DOWNLOAD_DIR
+        mv $DOWNLOAD_DIR/jdk1.8.0_171 /usr/lib
+        if [ -z "$JAVA_HOME" ]; then
+            echo "export JAVA_HOME=/usr/lib/jdk1.8.0_171" >> $ENVIRONMENT
+            echo "export PATH=$PATH:/usr/lib/jdk1.8.0_171/bin" >> $ENVIRONMENT
+            source $ENVIRONMENT
+        fi
+        echo -e "${GREEN}***** JAVA DONE! *****${NC}"
     fi
-    echo -e "${GREEN}***** JAVA DONE! *****${NC}"
 fi
 
 # Initialize directories
@@ -261,7 +252,10 @@ cd /opt
 ## Bandwidth throttler
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
-git clone https://github.com/ovedanner/bandwidth-throttler.git
+git clone https://github.com/alexandruc16/bandwidth-throttler.git
+rm -rf /usr/bin/shape_traffic
+mkdir /usr/bin/shape_traffic
+cp /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
 ## TPC-DS
@@ -272,4 +266,13 @@ sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
 echo "Finished installing packages" >> /var/log/context.log
+
+# Set hostname
+echo $HOSTNAME > /etc/hostname
+hostname $HOSTNAME
+sed -i "s/.*127\.0\.0\.1.*/127\.0\.0\.1 localhost $HOSTNAME/" /etc/hosts
+sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1 $HOSTNAME/" /etc/hosts
+
+# Restart SSH
+sudo service ssh restart &>> /var/log/context.log
 

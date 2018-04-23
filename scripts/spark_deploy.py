@@ -1,15 +1,15 @@
 #!/usr/bin/python
 
-from subprocess import Popen, PIPE
 import argparse
+import conf.defaults as defaults
 import os
 import paramiko
 import re
 import sys
-import conf.defaults as defaults
+from subprocess import Popen, PIPE
+from time import sleep
 
-
-pkey = paramiko.RSAKey.from_private_key(os.path.expanduser("~/.ssh/id_rsa"))
+pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
 
 def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
@@ -35,6 +35,33 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
             print("Error occurred while issuing SSH commands to " + ip)
             print(commands)
             raise
+            
+
+def test_ssh(ips, remote_username):
+    delay = 30
+    ips_count = len(ips)
+    nodes_online = []
+    
+    while ips_count > 0:
+        for ip in ips:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            try:
+                ssh.connect(ip, username=remote_username, pkey=pkey)
+                nodes_online.append(ip)
+            except:
+                pass
+        
+        nodes_online_count = len(nodes_online)
+        
+        if nodes_online_count > 0:
+            ips = [ip for ip in ips if ip not in nodes_online]
+            ips_count = len(ips)
+        
+        if ips_count > 0:
+            print("%d nodes online, %d to go. Retrying in %d seconds." % (nodes_online_count, ips_count, delay))
+            sleep(delay)  
 
 
 def get_or_generate_public_key(master_ip, username, verbose):
@@ -116,8 +143,6 @@ def spawn_slaves(cluster_name, slave_template, num_slaves):
 
             # slaves_dict[slave_id] = ip_list[0]
             slaves_dict[slave_id] = ip_list[0]
-        print(slaves_dict)
-
     except:
         raise
 
@@ -286,6 +311,7 @@ def main():
     slave_template = defaults.slave_template
     hadoop_dir = defaults.hadoop_dir
     spark_dir = defaults.spark_dir
+    hibench_dir = defaults.hibench_dir
     remote_username = defaults.remote_username
 
     if dryrun:
@@ -295,23 +321,24 @@ def main():
         print("Master IP: " + str(master_ip))
         print("Number of Slaves: " + str(num_slaves))
         print("Slave template: " + str(slave_template))
-        print("Hadoop Dir on Master: " + str(hadoop_dir))
-        print("Spark Dir on Master: " + str(spark_dir))
+        print("Hadoop directory: " + str(hadoop_dir))
+        print("Spark directory: " + str(spark_dir))
+        print("HiBench directory: " + str(hibench_dir))
         print("\n")
         sys.exit(0)
 # Get the Master's public key
-    master_key = get_or_generate_public_key(master_ip, remote_username, verbose)
-    print("\n")
-    print("******** Got the master's SSH key **********")
-    update_status = update_master_public_key(master_key, verbose)
-    if "ERROR" in update_status:
-        print update_status
-        sys.exit(0)
+    #master_key = get_or_generate_public_key(master_ip, remote_username, verbose)
+    #print("\n")
+    #print("******** Got the master's SSH key **********")
+    #update_status = update_master_public_key(master_key, verbose)
+    #if "ERROR" in update_status:
+    #    print update_status
+    #    sys.exit(0)
 
-    if verbose:
-        print(update_status)
-    print("******** Updated master's SSH key **********")
-    print("\n")
+    #if verbose:
+    #    print(update_status)
+    #print("******** Updated master's SSH key **********")
+    #print("\n")
 # Now create the requested number of slaves
 # confirm cluster name
     print("Cluster name will be set to: " + args.cluster_name)
@@ -328,12 +355,13 @@ def main():
         print(hostname + " Created...")
         slave_hostnames.append(str(hostname))
     print("\n")
+    
 # save slaves hostnames to file
     slave_file = open(filename, "w")
     for host in slave_hostnames:
         slave_file.write(host + "\n")
 
-    slave_hostnames.append(master_hostname)
+    slave_hostnames.append(master_ip)
 
 # move slaves file to master's spark conf directory
     scp(master_ip, remote_username, filename, spark_dir, verbose)
@@ -341,13 +369,17 @@ def main():
     print("\n")
     print("*********** All Slaves Created **************************")
     print("*********** Slaves file Copied to Master ****************")
-    print("*********** Check that all slaves are RUNNING ***********")
+    print("*********** Waiting for slaves to finish setting up *****")
     print("\n")
+    
+    # wait until all slaves are available
+    test_ssh(slave_hostnames, remote_username)
+    
     print("*********** Starting up *********************************")
     
-    configure_hadoop(hadoop_dir, master_hostname, slave_hostnames, remote_username)
-    configure_spark(spark_dir, master_hostname, slaves_dict, remote_username)
-    configure_hibench(hibench_dir, master_hostname, slave_hostnames, remote_username)
+    #configure_hadoop(hadoop_dir, master_hostname, slave_hostnames, remote_username)
+    #configure_spark(spark_dir, master_hostname, slaves_dict, remote_username)
+    #configure_hibench(hibench_dir, master_hostname, slave_hostnames, remote_username)
 
 if __name__ == "__main__":
     main()
