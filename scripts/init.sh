@@ -116,15 +116,19 @@ if [ $? == 0 ]; then
     echo -e "${GREEN}Java was found${NC}"
 else
     echo -e "${YELLOW}Installing Oracle JDK v1.8${NC}"
-    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u161-b12/2f38c3b165be4555a1fa6e98c45e0808/jdk-8u161-linux-x64.tar.gz -P $DOWNLOAD_DIR
-    tar -xzf $DOWNLOAD_DIR/jdk-8u161-linux-x64.tar.gz -C $DOWNLOAD_DIR
-    mv $DOWNLOAD_DIR/jdk1.8.0_161 /usr/lib
-    if [ -z "$JAVA_HOME" ]; then
-        echo "export JAVA_HOME=/usr/lib/jdk1.8.0_161" >> $ENVIRONMENT
-        echo "export PATH=$PATH:/usr/lib/jdk1.8.0_161/bin" >> $ENVIRONMENT
-        source $ENVIRONMENT
+    wget_output=$(wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u171-b11/512cd62ec5174c3487ac17c61aaa89e8/jdk-8u171-linux-x64.tar.gz -P $DOWNLOAD_DIR)
+    if [ $? -ne 0 ]; then
+        echo "Failed to download Oracle JDK. Please install manually." >> /var/log/context.log
+    else
+        tar -xzf $DOWNLOAD_DIR/jdk-8u171-linux-x64.tar.gz -C $DOWNLOAD_DIR
+        mv $DOWNLOAD_DIR/jdk1.8.0_171 /usr/lib
+        if [ -z "$JAVA_HOME" ]; then
+            echo "export JAVA_HOME=/usr/lib/jdk1.8.0_171" >> $ENVIRONMENT
+            echo "export PATH=$PATH:/usr/lib/jdk1.8.0_171/bin" >> $ENVIRONMENT
+            source $ENVIRONMENT
+        fi
+        echo -e "${GREEN}***** JAVA DONE! *****${NC}"
     fi
-    echo -e "${GREEN}***** JAVA DONE! *****${NC}"
 fi
 
 # Initialize directories
