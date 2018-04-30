@@ -6,6 +6,7 @@ import os
 import paramiko
 import re
 import sys
+import time
 from subprocess import Popen, PIPE
 from time import sleep
 
@@ -13,6 +14,8 @@ pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa")
 
 
 def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
+    timeout = 5
+    
     if not master_ip is None:
         slaves_list.insert(0, master_ip)
             
@@ -26,6 +29,14 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
             stdout = channel.makefile('rb')
 
             stdin.write(commands)
+            endtime = time.time() + timeout
+            
+            while not stdout.channel.eof_received:
+                sleep(1)
+                
+                if time.time() > endtime:
+                    stdout.channel.close()
+            
             print(stdout.read())
 
             stdout.close()
@@ -135,16 +146,11 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
     
     for node in nodes_dict.iterkeys():
         s = "%s\t%s" % (nodes_dict[node], node)
-        ssh_commands += "cat %s >> /etc/hosts\n" % s
+        ssh_commands += "echo \"%s\" | sudo tee -a /etc/hosts\n" % s
     
     while ips_count > 0:
         for ip in ips:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
             try:
-                ssh.connect(ip, username=remote_username, pkey=pkey)
-                ssh.close()
                 issue_ssh_commands([ip], ssh_commands, remote_username)
                 nodes_online.append(ip)
             except:
