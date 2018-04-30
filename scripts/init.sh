@@ -105,6 +105,10 @@ echo -e "${YELLOW}Preparing benchmark scripts${NC}"
 cd /opt
 rm -rf /opt/spark-deploy
 git clone https://github.com/alexandruc16/spark-deploy.git
+##### REMOVE BELOW AFTER TESTING
+git checkout test
+git pull origin test
+##### REMOVE ABOVE AFTER TESTING
 cd spark-deploy/scripts
 cd ../config-files
 CONFIG_DIR="$(pwd)"
