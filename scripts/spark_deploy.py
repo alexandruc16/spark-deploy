@@ -371,7 +371,7 @@ def main():
     print("\n")
     
     # wait until all slaves are available
-    set_up_hosts_file(master_hostname, master_ip, slave_hostnames, remote_username)
+    set_up_hosts_file(master_hostname, master_ip, slaves_dict, remote_username)
     
     print("*********** Starting up *********************************")
     
