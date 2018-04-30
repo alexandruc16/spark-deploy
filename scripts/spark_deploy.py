@@ -115,9 +115,7 @@ def spawn_slaves(cluster_name, slave_template, num_slaves):
             vm_info = Popen(["onevm", "show", str(slave_id)],
                             stdout=PIPE).communicate()[0]
             ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
-
-            # slaves_dict[slave_id] = ip_list[0]
-            slaves_dict[slave_id] = ip_list[0]
+            slaves_dict[slave_name] = ip_list[0]
     except:
         raise
 
@@ -130,10 +128,10 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
 
     ssh_commands = ''
     delay = 30
+    nodes_dict[master_hostname] = master_ip
     ips = nodes_dict.values()
     ips_count = len(ips)
     nodes_online = []
-    nodes_dict[master_hostname] = master_ip
     
     for node in nodes_dict.iterkeys():
         s = "%s\t%s" % (nodes_dict[node], node)
