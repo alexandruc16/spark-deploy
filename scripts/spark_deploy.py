@@ -377,9 +377,9 @@ def main():
     
     print("*********** Starting up *********************************")
     
-    #configure_hadoop(hadoop_dir, master_hostname, slave_hostnames, remote_username)
-    #configure_spark(spark_dir, master_hostname, slaves_dict, remote_username)
-    #configure_hibench(hibench_dir, master_hostname, slave_hostnames, remote_username)
+    configure_hadoop(hadoop_dir, master_hostname, slave_hostnames, remote_username)
+    configure_spark(spark_dir, master_hostname, slaves_dict, remote_username)
+    configure_hibench(hibench_dir, master_hostname, slave_hostnames, remote_username)
 
 if __name__ == "__main__":
     main()
