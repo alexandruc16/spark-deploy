@@ -19,6 +19,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
     for ip in slaves_list:
         try:
             ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(ip, username=remote_username, pkey=pkey)
             channel = ssh.invoke_shell()
             stdin = channel.makefile('wb')
@@ -30,38 +31,12 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
             stdout.close()
             stdin.close()
             channel.close()
+            ssh.close()
         
         except:
             print("Error occurred while issuing SSH commands to " + ip)
             print(commands)
             raise
-            
-
-def test_ssh(ips, remote_username):
-    delay = 30
-    ips_count = len(ips)
-    nodes_online = []
-    
-    while ips_count > 0:
-        for ip in ips:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
-            try:
-                ssh.connect(ip, username=remote_username, pkey=pkey)
-                nodes_online.append(ip)
-            except:
-                pass
-        
-        nodes_online_count = len(nodes_online)
-        
-        if nodes_online_count > 0:
-            ips = [ip for ip in ips if ip not in nodes_online]
-            ips_count = len(ips)
-        
-        if ips_count > 0:
-            print("%d nodes online, %d to go. Retrying in %d seconds." % (nodes_online_count, ips_count, delay))
-            sleep(delay)  
 
 
 def get_or_generate_public_key(master_ip, username, verbose):
@@ -150,21 +125,44 @@ def spawn_slaves(cluster_name, slave_template, num_slaves):
     return slaves_dict
 
 
-def set_up_hosts_file(master_ip, slaves_dict, remote_username):
-    print("Editing hosts file..")
+def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
+    print("Testing ssh and editing hosts file..")
 
     ssh_commands = ''
-
-    try:
-        s = "%s\tmaster" % master_ip
+    delay = 30
+    ips = nodes_dict.values()
+    ips_count = len(ips)
+    nodes_online = []
+    nodes_dict[master_hostname] = master_ip
+    
+    for node in nodes_dict.iterkeys():
+        s = "%s\t%s" % (nodes_dict[node], node)
         ssh_commands += "cat %s >> /etc/hosts\n" % s
-        for slave in slaves_dict.iterkeys():
-            s = "%s\t%s" % (slaves_dict[slave], slave)
-            ssh_commands += "cat %s >> /etc/hosts\n" % s
-        issue_ssh_commands(slaves_dict.values(), remote_username, master_ip)
-        print('Hosts file set up!')
-    except:
-        raise
+    
+    while ips_count > 0:
+        for ip in ips:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            try:
+                ssh.connect(ip, username=remote_username, pkey=pkey)
+                ssh.close()
+                issue_ssh_commands([ip], ssh_commands, remote_username)
+                nodes_online.append(ip)
+            except:
+                pass
+        
+        nodes_online_count = len(nodes_online)
+        
+        if nodes_online_count > 0:
+            ips = [ip for ip in ips if ip not in nodes_online]
+            ips_count = len(ips)
+        
+        if ips_count > 0:
+            print("%d nodes online, %d to go. Retrying in %d seconds." % (nodes_online_count, ips_count, delay))
+            sleep(delay)
+    
+    print('Hosts file set up!')
 
 
 def configure_hadoop(hadoop_dir, master_hostname, slaves_list, remote_username):
@@ -373,7 +371,7 @@ def main():
     print("\n")
     
     # wait until all slaves are available
-    test_ssh(slave_hostnames, remote_username)
+    set_up_hosts_file(master_hostname, master_ip, slave_hostnames, remote_username)
     
     print("*********** Starting up *********************************")
     
