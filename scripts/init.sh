@@ -153,7 +153,7 @@ fi
 CMD_OUTPUT=$(command -v hadoop)
 if [ -z "$CMD_OUTPUT" ]; then
     echo -e "${YELLOW}Installing Hadoop v2.7.5${NC}"
-    wget http://ftp.tudelft.nl/apache/hadoop/common/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
+    wget https://archive.apache.org/dist/hadoop/core/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
     tar -xzf $DOWNLOAD_DIR/hadoop-2.7.5.tar.gz -C $DOWNLOAD_DIR
     if [ ! -d $HADOOP_DIR ]; then
         mkdir $HADOOP_DIR
