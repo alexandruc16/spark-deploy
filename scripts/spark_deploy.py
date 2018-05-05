@@ -199,7 +199,7 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
         ssh_commands += 'cat %s >> slaves\n' % ip
 
     for r in replacements:
-        ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], conf_file)
+        ssh_commands += 'sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
 
     slaves_dict[master_hostname] = master_ip
     
@@ -214,7 +214,7 @@ def configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remo
     f = os.path.join(hibench_dir, 'hadoop.conf')
 
     for r in replacements:
-        ssh_commands += 'sed -i \'s/%s/%s/g\' %d\n' % (r, replacements[r], f)
+        ssh_commands += 'sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], f)
         
     slaves_dict[master_hostname] = master_ip
     
