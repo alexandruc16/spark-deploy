@@ -172,15 +172,15 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
 def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring Hadoop..')
     replacements = {'{{master_hostname}}': master_hostname, '{{num_workers}}': str(len(slaves_dict.values()))}
-    conf_dir = os.path.join(hadoop_dir, '/etc/hadoop')
+    conf_dir = os.path.join(hadoop_dir, 'etc/hadoop')
     
     ssh_commands = ''
     ssh_commands += 'cd %s\n' % conf_dir
 
     for r in replacements:
-        ssh_commands += 'sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
-        ssh_commands += 'sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
-        ssh_commands += 'sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
 
     slaves_dict[master_hostname] = master_ip
     
@@ -190,16 +190,16 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
 
 def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring Spark..')
-    conf_file = os.path.join(spark_dir, '/conf/spark-env.sh')
+    conf_file = os.path.join(spark_dir, 'conf/spark-env.sh')
     replacements = {'{{master_hostname}}': master_hostname}
-    ssh_commands = 'cd %s\n' % spark_dir
-    ssh_commands += 'touch slaves\n'
+    slaves_file = os.path.join(spark_dir, 'conf/slaves')
+    ssh_commands = ''
 
     for ip in slaves_dict.values():
-        ssh_commands += 'echo %s >> slaves\n' % ip
+        ssh_commands += 'sudo echo %s >> %s\n' % (ip, slaves_file)
 
     for r in replacements:
-        ssh_commands += 'sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
 
     slaves_dict[master_hostname] = master_ip
     
