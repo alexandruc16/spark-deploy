@@ -214,7 +214,7 @@ def configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remo
     f = os.path.join(hibench_dir, 'conf/hadoop.conf')
 
     for r in replacements:
-        ssh_commands += 'sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], f)
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], f)
         
     slaves_dict[master_hostname] = master_ip
     
