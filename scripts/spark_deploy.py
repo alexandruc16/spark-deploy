@@ -206,6 +206,8 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
         
+    ssh_commands += 'sudo echo \"SPARK_MASTER_HOST=\'%s\'\" >> %s\n' % (master_ip, conf_file)
+        
     issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Spark configured!')
 
