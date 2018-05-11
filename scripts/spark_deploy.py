@@ -187,7 +187,7 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
     ssh_commands += 'sudo echo \'%s\' >> masters\n' % master_hostname
     
     for slave_hostname in slaves_dict.keys():
-        ssh_commands += 'sudo echo \'%s\' >> slaves\n'
+        ssh_commands += 'sudo echo \'%s\' >> slaves\n' % slave_hostname
     
     issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Hadoop configured!')
