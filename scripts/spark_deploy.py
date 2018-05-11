@@ -390,7 +390,7 @@ def main():
     print("*********** Starting up *********************************")
     
     configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
-    format_namenode(hadoop_dir, master_ip, remote_hostname)
+    format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username)
 
