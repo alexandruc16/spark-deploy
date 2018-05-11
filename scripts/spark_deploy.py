@@ -38,7 +38,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
                     stdout.channel.close()
                     break
             
-            print(stdout.read())
+            #print(stdout.read())
 
             stdout.close()
             stdin.close()
@@ -225,10 +225,10 @@ def configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remo
     print('HiBench configured!')
 
 
-def format_namenode(hadoop_dir, master_hostname, slaves_list, remote_username):
+def format_namenode(hadoop_dir, master_hostname, remote_username):
     print('Formatting Hadoop namenode..')
     ssh_commands = '%s/bin/hadoop namenode -format\n' % hadoop_dir
-    issue_ssh_commands(slaves_list, ssh_commands, remote_username, master_hostname)
+    issue_ssh_commands([], ssh_commands, remote_username, master_hostname)
     print('Hadoop namenode formatted!')
 
 
@@ -390,6 +390,7 @@ def main():
     print("*********** Starting up *********************************")
     
     configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    format_namenode(hadoop_dir, master_ip, remote_hostname)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username)
 
