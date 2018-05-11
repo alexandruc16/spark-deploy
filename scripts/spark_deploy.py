@@ -48,6 +48,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
         except:
             print("Error occurred while issuing SSH commands to " + ip)
             print(commands)
+            raise
 
 
 def get_or_generate_public_key(master_ip, username, verbose):
@@ -181,10 +182,8 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
-
-    slaves_dict[master_hostname] = master_ip
     
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_hostname)
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Hadoop configured!')
 
 
@@ -200,10 +199,8 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
 
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
-
-    slaves_dict[master_hostname] = master_ip
-    
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_hostname)
+        
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Spark configured!')
 
 
@@ -218,7 +215,7 @@ def configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remo
         
     slaves_dict[master_hostname] = master_ip
     
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_hostname)
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('HiBench configured!')
 
 
