@@ -74,25 +74,25 @@ else
 	echo "GATEWAY DOES NOT EXIST\n" >> /var/log/netmask.log
 fi
 
-sudo apt-get install -f
-sudo apt-get update
-sudo apt-get -y upgrade
+sudo apt-get install -f 2>> /home/$USERNAME/contextualization.log
+sudo apt-get update 2>> /home/$USERNAME/contextualization.log
+sudo apt-get -y upgrade 2>> /home/$USERNAME/contextualization.log
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
 INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-sudo apt-get update
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 2>> /home/$USERNAME/contextualization.log
+sudo apt-get update 2>> /home/$USERNAME/contextualization.log
 for pkg in $INSTALL_PKGS; do
-    sudo apt-get -y install $pkg
+    sudo apt-get -y install $pkg 2>> /home/$USERNAME/contextualization.log
 done
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
 echo -e "${YELLOW}Installing Python and required libraries${NC}"
-sudo apt-get -y install python2.7 python-pip
-pip2 install paramiko pyzmq psutil
+sudo apt-get -y install python2.7 python-pip 2>> /home/$USERNAME/contextualization.log
+pip2 install paramiko pyzmq psutil 2>> /home/$USERNAME/contextualization.log
 echo -e "${GREEN}*********** Python Done ************${NC}"
 
 
