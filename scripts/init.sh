@@ -104,13 +104,8 @@ source $ENVIRONMENT
 echo -e "${YELLOW}Preparing benchmark scripts${NC}"
 cd /opt
 rm -rf /opt/spark-deploy
-git clone https://github.com/alexandruc16/spark-deploy.git
-##### REMOVE BELOW AFTER TESTING
-git checkout test
-git pull origin test
-##### REMOVE ABOVE AFTER TESTING
-cd spark-deploy/scripts
-cd ../config-files
+sudo git clone https://github.com/alexandruc16/spark-deploy.git
+cd spark-deploy/config-files
 CONFIG_DIR="$(pwd)"
 echo -e "${GREEN}*********** Benchmarking Scripts Done ************${NC}"
 
@@ -143,6 +138,8 @@ SPARK_DIR=$PROJ_DIR/spark
 HIBENCH_DIR=/opt/hibench
 SPARK_PERF_DIR=/opt/spark-perf
 BIGBENCH_DIR=/opt/big-bench
+HIVE_DIR=$PROJ_DIR/hive
+GRAPHALYTICS_CORE_DIR=/opt/graphalytics
 
 if [ ! -d $DOWNLOAD_DIR ]; then
     mkdir $DOWNLOAD_DIR
@@ -256,7 +253,7 @@ cd /opt
 ## Bandwidth throttler
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
-git clone https://github.com/alexandruc16/bandwidth-throttler.git
+sudo git clone https://github.com/alexandruc16/bandwidth-throttler.git
 rm -rf /usr/bin/shape_traffic
 mkdir /usr/bin/shape_traffic
 cp /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
@@ -265,11 +262,52 @@ echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 ## TPC-DS
 echo -e "${YELLOW}Preparing TPC-DS${NC}"
 rm -rf /opt/spark-tpc-ds-performance-test
-git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
+sudo git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
 echo "Finished installing packages" >> /var/log/context.log
+
+## BigBench (TPCx-BB)
+export INSTALL_DIR="/opt/big-bench"
+cd $INSTALL_DIR
+sudo git clone https://github.com/intel-hadoop/Big-Data-Benchmark-for-Big-Bench.git
+
+## Hive
+if [ -z "$HIVE_HOME" ]; then
+    echo -e "${YELLOW}Installing Hive v2.3.3${NC}"
+    wget https://archive.apache.org/dist/hive/hive-2.3.3/apache-hive-2.3.3-bin.tar.gz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/apache-hive-2.3.3-bin.tar.gz -C $DOWNLOAD_DIR
+    if [ ! -d $HIVE_DIR ]; then
+        mkdir $HIVE_DIR
+    fi
+    mv $DOWNLOAD_DIR/apache-hive-2.3.3-bin/* $HADOOP_DIR
+    echo "export HIVE_HOME=$HIVE_DIR" >> $ENVIRONMENT
+    source $ENVIRONMENT
+    echo "export PATH=$PATH:$HIVE_DIR" >> $ENVIRONMENT
+    $HADOOP_DIR/bin/hdfs dfs -mkdir -p /$USERNAME/hive/warehouse
+    $HADOOP_DIR/bin/hdfs dfs -mkdir /tmp
+    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /$USERNAME/hive/warehouse
+    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /tmp
+    echo "HADOOP_HOME=$HADOOP_DIR" >> $HIVE_DIR/conf/hive-env.sh
+    echo "HIVE_CONF_DIR=$HIVE_DIR/conf" >> $HIVE_DIR/conf/hive-env.sh
+    $HIVE_DIR/bin/schematool -initSchema -dbType derby
+    echo -e "${GREEN}***** HIVE DONE! *****${NC}"
+fi
+
+## Graphalytics
+sudo rm -rf $GRAPHALYTICS_CORE_DIR
+sudo mkdir $GRAPHALYTICS_CORE_DIR
+wget https://github.com/ldbc/ldbc_graphalytics/archive/v0.9.0.tar.gz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/v0.9.0.tar.gz -C $DOWNLOAD_DIR
+sudo mv $DOWNLOAD_DIR/ldbc_graphalytics-0.9.0/* $GRAPHALYTICS_CORE_DIR
+cd $GRAPHALYTICS_CORE_DIR
+sudo mvn clean install
+wget https://github.com/atlarge-research/graphalytics-platforms-graphx/archive/v0.1.tar.gz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1.tar.gz -C $DOWNLOAD_DIR
+cd $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1
+# mvn package # crashes -> cannot find graphalytics core in central Maven repository
+
 
 # Set hostname
 echo $HOSTNAME > /etc/hostname
