@@ -414,7 +414,7 @@ def main():
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     configure_hibench(hibench_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     start_hadoop(hadoop_dir, master_ip, remote_username)
-    start_spark(spark_dir, master_hostname, slaves_dict.values() remote_username)
+    start_spark(spark_dir, master_hostname, slaves_dict.values(), remote_username)
 
 if __name__ == "__main__":
     main()
