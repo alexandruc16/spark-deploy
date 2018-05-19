@@ -187,7 +187,7 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'core-site.xml'))
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'mapred-site.xml'))
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'hdfs-site.xml'))
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'hdfs-site.xml'))
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'yarn-site.xml'))
     
     ssh_commands += 'sudo rm -rf %s %s\n' % (os.path.join(conf_dir, 'masters'), os.path.join(conf_dir, 'slaves'))
