@@ -7,8 +7,4 @@
         <name>mapreduce.framework.name</name>
         <value>yarn</value>
     </property>
-    <property>
-        <name>yarn.nodemanager.auxservices</name>
-        <value>mapreduce_shuffle</value>
-    </property>
 </configuration>

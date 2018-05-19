@@ -1,0 +1,10 @@
+<configuration>
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>{{master_hostname}}</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.auxservices</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+</configuration>
