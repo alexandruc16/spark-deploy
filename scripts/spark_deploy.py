@@ -249,18 +249,18 @@ def format_namenode(hadoop_dir, master_hostname, remote_username):
 
 def start_hadoop(hadoop_dir, master_hostname, remote_username):
     print('Starting Hadoop..')
-    ssh_command = '%s/sbin/start-all.sh\n' % hadoop_dir
+    ssh_command = '%s\n' % os.path.join(hadoop_dir, 'sbin/start-all.sh')
     
     issue_ssh_commands([], ssh_command, remote_username, master_hostname)
     print('Hadoop started!')
 
 def start_spark(spark_dir, master_hostname, slaves_list, remote_username):
     print('Starting Spark..')
-    ssh_command = '%s/sbin/start-master.sh\n' % spark_dir
+    ssh_command = '%s\n' % os.path.join(spark_dir, 'sbin/start-master.sh')
     
     issue_ssh_commands([], ssh_command, remote_username, master_hostname)
     
-    ssh_command = '%s/sbin/start-slave.sh spark://%s:7077' % (spark_dir, master_hostname)
+    ssh_command = '%s spark://%s:7077\n' % (os.path.join(spark_dir, 'sbin/start-master.sh'), master_hostname)
     
     issue_ssh_commands(slaves_list, ssh_command, remote_username)    
     print('Spark started!')
