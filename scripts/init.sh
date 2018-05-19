@@ -33,7 +33,7 @@ if [ ! -z "$SSH_PUBLIC_KEY" ]; then
 	chmod 600 /home/$USERNAME/.ssh/authorized_keys
 
 	# add sudo to look around on system:
-	echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
+	echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 	# check:
 	cp /etc/sudoers /etc/sudoers.copy
 	chmod 644 /etc/sudoers.copy
@@ -170,6 +170,7 @@ if [ -z "$CMD_OUTPUT" ]; then
         source $ENVIRONMENT
     fi
     echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh
+    echo "export HADOOP_OPTS=-DJava.net.preferIPv4Stack=true" >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh # prefer using IPv4
     chmod -R 777 $HADOOP_DIR
     echo -e "${GREEN}***** HADOOP DONE! *****${NC}"
 else
@@ -177,7 +178,7 @@ else
     HADOOP_DIR=$CMD_OUTPUT
 fi
 yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
-sudo mkdir -p $HADOOP_DIR/dfs/
+sudo mkdir -p $HADOOP_DIR/tmp/
 sudo mkdir -p $HADOOP_DIR/dfs/name
 sudo mkdir -p $HADOOP_DIR/dfs/name/data
 sudo chown -R $USERNAME:$USERNAME $HADOOP_DIR

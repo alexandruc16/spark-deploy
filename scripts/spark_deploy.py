@@ -175,17 +175,19 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
     conf_dir = os.path.join(hadoop_dir, 'etc/hadoop')
     hdfs_name_dir = os.path.join(hadoop_dir, 'dfs/name')
     hdfs_data_dir = os.path.join(hadoop_dir, 'dfs/name/data')
+    hadoop_tmp_dir = os.path.join(hadoop_dir, 'tmp')
     replacements = {
         '{{master_hostname}}': master_hostname, 
         '{{num_workers}}': str(len(slaves_dict.values())),
         '{{dfs_name_dir}}': hdfs_name_dir,
-        '{{dfs_data_dir}}': hdfs_data_dir
+        '{{dfs_data_dir}}': hdfs_data_dir,
+        '{{hadoop_tmp_dir}}': hadoop_tmp_dir
     }
     
     ssh_commands = ''
 
     for r in replacements:
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'core-site.xml'))
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'core-site.xml'))
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'mapred-site.xml'))
         ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'hdfs-site.xml'))
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'yarn-site.xml'))
