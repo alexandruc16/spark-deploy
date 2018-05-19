@@ -217,14 +217,22 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     print('Spark configured!')
 
 
-def configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username):
+def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring HiBench')
     ssh_commands = ''
-    replacements = {'{{master_hostname}}': master_hostname}
-    f = os.path.join(hibench_dir, 'conf/hadoop.conf')
+        
+    replacements = {
+        '{{master_hostname}}': master_hostname,
+        '{{hadoop_dir}}': hadoop_dir,
+        '{{hadoop_conf_dir}}': os.path.join(hadoop_dir, 'etc/hadoop'),
+        '{{hadoop_exec}}': os.path.join(hadoop_dir, 'bin/hadoop'),
+        '{{spark_dir}}': spark_dir)
+    }
 
     for r in replacements:
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], f)
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'hadoop.conf'))
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'spark.conf'))
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'hibench.conf'))
         
     slaves_dict[master_hostname] = master_ip
     
@@ -399,10 +407,12 @@ def main():
     
     print("*********** Starting up *********************************")
     
+    hibench_conf_dir = os.path.join(hibench_dir, 'conf')
+    
     configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
     format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
-    configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    configure_hibench(hibench_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     start_hadoop(hadoop_dir, master_ip, remote_username)
     start_spark(spark_dir, master_hostname, slaves_dict.values() remote_username)
 
