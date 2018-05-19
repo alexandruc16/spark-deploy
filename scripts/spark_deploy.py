@@ -206,16 +206,12 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     print('Configuring Spark..')
     conf_file = os.path.join(spark_dir, 'conf/spark-env.sh')
     replacements = {'{{master_hostname}}': master_hostname}
-    slaves_file = os.path.join(spark_dir, 'conf/slaves')
     ssh_commands = ''
-
-    for ip in slaves_dict.values():
-        ssh_commands += 'sudo echo %s >> %s\n' % (ip, slaves_file)
 
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
         
-    ssh_commands += 'echo \"SPARK_MASTER_HOST=\'%s\'\" | sudo tee -a %s\n' % (master_ip, conf_file)
+    ssh_commands += 'echo \"SPARK_MASTER_HOST=\'%s\'\" | sudo tee -a %s\n' % (master_hostname, conf_file)
         
     issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Spark configured!')
@@ -245,17 +241,20 @@ def format_namenode(hadoop_dir, master_hostname, remote_username):
 
 def start_hadoop(hadoop_dir, master_hostname, remote_username):
     print('Starting Hadoop..')
-    ssh_commands = '%s/sbin/start-dfs.sh\n' % hadoop_dir
-    ssh_commands += '%s/sbin/start-yarn.sh\n' % hadoop_dir
+    ssh_command = '%s/sbin/start-all.sh\n' % hadoop_dir
     
-    issue_ssh_commands([], ssh_commands, remote_username, master_hostname)
+    issue_ssh_commands([], ssh_command, remote_username, master_hostname)
     print('Hadoop started!')
 
-def start_spark(spark_dir, master_hostname, remote_username):
+def start_spark(spark_dir, master_hostname, slaves_list, remote_username):
     print('Starting Spark..')
-    ssh_commands = '%s/sbin/start-all.sh\n' % spark_dir
+    ssh_command = '%s/sbin/start-master.sh\n' % spark_dir
     
-    issue_ssh_commands([], ssh_commands, remote_username, master_hostname)
+    issue_ssh_commands([], ssh_command, remote_username, master_hostname)
+    
+    ssh_command = '%s/sbin/start-slave.sh spark://%s:7077' % (spark_dir, master_hostname)
+    
+    issue_ssh_commands(slaves_list, ssh_command, remote_username)    
     print('Spark started!')
 
 def check_args(args):
@@ -405,7 +404,7 @@ def main():
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username)
     start_hadoop(hadoop_dir, master_ip, remote_username)
-    start_spark(spark_dir, master_ip, remote_username)
+    start_spark(spark_dir, master_hostname, slaves_dict.values() remote_username)
 
 if __name__ == "__main__":
     main()
