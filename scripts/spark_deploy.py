@@ -182,6 +182,7 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' yarn-site.xml\n' % (r, replacements[r])
     
     ssh_commands += 'sudo rm -rf slaves masters\n'
     ssh_commands += 'sudo echo \'%s\' >> masters\n' % master_hostname
@@ -242,7 +243,7 @@ def start_hadoop(hadoop_dir, master_hostname, remote_username):
     issue_ssh_commands([], ssh_commands, remote_username, master_hostname)
     print('Hadoop started!')
 
-def start_spark(spark_dir):
+def start_spark(spark_dir, master_hostname, remote_username):
     print('Starting Spark..')
     ssh_commands = '%s/sbin/start-all.sh\n' % spark_dir
     
@@ -395,6 +396,8 @@ def main():
     format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
     configure_hibench(hibench_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    start_hadoop(hadoop_dir, master_ip, remote_username)
+    start_spark(spark_dir, master_ip, remote_username)
 
 if __name__ == "__main__":
     main()
