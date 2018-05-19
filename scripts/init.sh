@@ -317,8 +317,6 @@ cd $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1
 # Set hostname
 echo $HOSTNAME > /etc/hostname
 hostname $HOSTNAME
-sed -i "s/.*127\.0\.0\.1.*/127\.0\.0\.1 localhost $HOSTNAME/" /etc/hosts
-sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1 $HOSTNAME/" /etc/hosts
 
 # Restart SSH
 sudo service ssh restart &>> /var/log/context.log
