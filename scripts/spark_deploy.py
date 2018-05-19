@@ -183,19 +183,18 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
     }
     
     ssh_commands = ''
-    ssh_commands += 'cd %s\n' % conf_dir
 
     for r in replacements:
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' core-site.xml\n' % (r, replacements[r])
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' mapred-site.xml\n' % (r, replacements[r])
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' hdfs-site.xml\n' % (r, replacements[r])
-        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' yarn-site.xml\n' % (r, replacements[r])
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'core-site.xml'))
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'mapred-site.xml'))
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'hdfs-site.xml'))
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(conf_dir, 'yarn-site.xml'))
     
-    ssh_commands += 'sudo rm -rf slaves masters\n'
-    ssh_commands += 'sudo echo \'%s\' >> masters\n' % master_hostname
+    ssh_commands += 'sudo rm -rf %s %s\n' % (os.path.join(conf_dir, 'masters'), os.path.join(conf_dir, 'slaves'))
+    ssh_commands += 'sudo echo \'%s\' >> %s\n' % (master_hostname, os.path.join(conf_dir, 'masters'))
     
     for slave_hostname in slaves_dict.keys():
-        ssh_commands += 'sudo echo \'%s\' >> slaves\n' % slave_hostname
+        ssh_commands += 'sudo echo \'%s\' >> %s\n' % (slave_hostname, os.path.join(conf_dir, 'slaves'))
     
     issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
     print('Hadoop configured!')
