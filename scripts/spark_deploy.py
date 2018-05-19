@@ -226,7 +226,7 @@ def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, 
         '{{hadoop_dir}}': hadoop_dir,
         '{{hadoop_conf_dir}}': os.path.join(hadoop_dir, 'etc/hadoop'),
         '{{hadoop_exec}}': os.path.join(hadoop_dir, 'bin/hadoop'),
-        '{{spark_dir}}': spark_dir)
+        '{{spark_dir}}': spark_dir
     }
 
     for r in replacements:
