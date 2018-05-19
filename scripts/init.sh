@@ -180,6 +180,7 @@ yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
 sudo mkdir -p $HADOOP_DIR/dfs/
 sudo mkdir -p $HADOOP_DIR/dfs/name
 sudo mkdir -p $HADOOP_DIR/dfs/name/data
+sudo chown -R $USERNAME:$USERNAME $HADOOP_DIR
 
 
 ## SCALA
