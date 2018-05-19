@@ -172,8 +172,15 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
 
 def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring Hadoop..')
-    replacements = {'{{master_hostname}}': master_hostname, '{{num_workers}}': str(len(slaves_dict.values()))}
     conf_dir = os.path.join(hadoop_dir, 'etc/hadoop')
+    hdfs_name_dir = os.path.join(hadoop_dir, 'dfs/name')
+    hdfs_data_dir = os.path.join(hadoop_dir, 'dfs/name/data')
+    replacements = {
+        '{{master_hostname}}': master_hostname, 
+        '{{num_workers}}': str(len(slaves_dict.values())),
+        '{{dfs_name_dir}}': hdfs_name_dir,
+        '{{dfs_data_dir}}': hdfs_data_dir
+    }
     
     ssh_commands = ''
     ssh_commands += 'cd %s\n' % conf_dir

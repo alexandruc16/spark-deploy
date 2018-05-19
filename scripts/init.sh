@@ -177,6 +177,9 @@ else
     HADOOP_DIR=$CMD_OUTPUT
 fi
 yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
+sudo mkdir -p $HADOOP_DIR/dfs/
+sudo mkdir -p $HADOOP_DIR/dfs/name
+sudo mkdir -p $HADOOP_DIR/dfs/name/data
 
 
 ## SCALA
