@@ -31,3 +31,13 @@ It does the following:
 
 A script is included which throttles bandwidths between VMs according to a given distribution and interval at which to generate new values.
 
+Usage
+-----
+
+- Instantiate a VM to use as master
+- Set appropriate framework configfurations in the ``config_files`` folder
+- Verify ``scripts/conf/defaults.py`` settings
+- Run ``spark_deploy -m <master_ip>`` to spawn and configure the slave nodes
+- Start up the frameworks of your liking
+- Run benchmarks
+- Graduate :)
