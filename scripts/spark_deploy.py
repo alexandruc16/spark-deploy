@@ -220,6 +220,20 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     print('Spark configured!')
 
 
+def generate_bw_files(workers, bw, filename):
+    num_workers = len(workers)
+    f = open(filename, 'w')
+    
+    for i in range(0, num_workers):
+        for j in range(0, num_workers):
+            if i == j:
+                continue
+            val = "%s:%s:%d" % (workers[i], workers[j], min(bw[i], bw[j]))
+            print >> f, val
+            
+    f.close()
+
+
 def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring HiBench')
     ssh_commands = ''
@@ -238,7 +252,7 @@ def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, 
         
     slaves_dict[master_hostname] = master_ip
     
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)    
     print('HiBench configured!')
 
 
