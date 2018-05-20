@@ -259,9 +259,7 @@ cd /opt
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
 sudo git clone https://github.com/alexandruc16/bandwidth-throttler.git
-rm -rf /usr/bin/shape_traffic
-mkdir /usr/bin/shape_traffic
-cp /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
+sudo cp -a /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
 ## TPC-DS
