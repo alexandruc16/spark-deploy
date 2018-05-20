@@ -33,7 +33,7 @@ if [ ! -z "$SSH_PUBLIC_KEY" ]; then
 	chmod 600 /home/$USERNAME/.ssh/authorized_keys
 
 	# add sudo to look around on system:
-	echo "$USERNAME ALL=(ALL) NOPASSWD: /bin/bash *" >>/etc/sudoers
+	echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
 	# check:
 	cp /etc/sudoers /etc/sudoers.copy
 	chmod 644 /etc/sudoers.copy
@@ -74,25 +74,25 @@ else
 	echo "GATEWAY DOES NOT EXIST\n" >> /var/log/netmask.log
 fi
 
-sudo apt-get install -f
-sudo apt-get update
-sudo apt-get -y upgrade
+sudo apt-get install -f 2>> /home/$USERNAME/contextualization.log
+sudo apt-get update 2>> /home/$USERNAME/contextualization.log
+sudo apt-get -y upgrade 2>> /home/$USERNAME/contextualization.log
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
 INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
-sudo apt-get update
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 2>> /home/$USERNAME/contextualization.log
+sudo apt-get update 2>> /home/$USERNAME/contextualization.log
 for pkg in $INSTALL_PKGS; do
-    sudo apt-get -y install $pkg
+    sudo apt-get -y install $pkg 2>> /home/$USERNAME/contextualization.log
 done
 echo -e "${GREEN}*********** dev tools Done ************${NC}"
 
 ## Python
 echo -e "${YELLOW}Installing Python and required libraries${NC}"
-sudo apt-get -y install python2.7 python-pip
-pip2 install paramiko pyzmq psutil
+sudo apt-get -y install python2.7 python-pip 2>> /home/$USERNAME/contextualization.log
+pip2 install paramiko pyzmq psutil 2>> /home/$USERNAME/contextualization.log
 echo -e "${GREEN}*********** Python Done ************${NC}"
 
 
@@ -104,9 +104,8 @@ source $ENVIRONMENT
 echo -e "${YELLOW}Preparing benchmark scripts${NC}"
 cd /opt
 rm -rf /opt/spark-deploy
-git clone https://github.com/alexandruc16/spark-deploy.git
-cd spark-deploy/scripts
-cd ../config-files
+sudo git clone https://github.com/alexandruc16/spark-deploy.git
+cd spark-deploy/config-files
 CONFIG_DIR="$(pwd)"
 echo -e "${GREEN}*********** Benchmarking Scripts Done ************${NC}"
 
@@ -139,6 +138,8 @@ SPARK_DIR=$PROJ_DIR/spark
 HIBENCH_DIR=/opt/hibench
 SPARK_PERF_DIR=/opt/spark-perf
 BIGBENCH_DIR=/opt/big-bench
+HIVE_DIR=$PROJ_DIR/hive
+GRAPHALYTICS_CORE_DIR=/opt/graphalytics
 
 if [ ! -d $DOWNLOAD_DIR ]; then
     mkdir $DOWNLOAD_DIR
@@ -153,7 +154,7 @@ fi
 CMD_OUTPUT=$(command -v hadoop)
 if [ -z "$CMD_OUTPUT" ]; then
     echo -e "${YELLOW}Installing Hadoop v2.7.5${NC}"
-    wget http://ftp.tudelft.nl/apache/hadoop/common/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
+    wget https://archive.apache.org/dist/hadoop/core/hadoop-2.7.5/hadoop-2.7.5.tar.gz -P $DOWNLOAD_DIR
     tar -xzf $DOWNLOAD_DIR/hadoop-2.7.5.tar.gz -C $DOWNLOAD_DIR
     if [ ! -d $HADOOP_DIR ]; then
         mkdir $HADOOP_DIR
@@ -169,6 +170,7 @@ if [ -z "$CMD_OUTPUT" ]; then
         source $ENVIRONMENT
     fi
     echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh
+    echo "export HADOOP_OPTS=-DJava.net.preferIPv4Stack=true" >> $HADOOP_DIR/etc/hadoop/hadoop-env.sh # prefer using IPv4
     chmod -R 777 $HADOOP_DIR
     echo -e "${GREEN}***** HADOOP DONE! *****${NC}"
 else
@@ -176,6 +178,10 @@ else
     HADOOP_DIR=$CMD_OUTPUT
 fi
 yes | cp -a $CONFIG_DIR/hadoop/* $HADOOP_COMMON_HOME/etc/hadoop/
+sudo mkdir -p $HADOOP_DIR/tmp/
+sudo mkdir -p $HADOOP_DIR/dfs/name
+sudo mkdir -p $HADOOP_DIR/dfs/name/data
+sudo chown -R $USERNAME:$USERNAME $HADOOP_DIR
 
 
 ## SCALA
@@ -222,7 +228,7 @@ else
     echo -e "${GREEN}Spark was found${NC}"
     SPARK_DIR=$SPARK_HOME
 fi
-cp -a $CONFIG_DIR/spark/spark-env.sh $SPARK_DIR/conf/spark-env.sh
+yes | cp -a $CONFIG_DIR/spark/spark-env.sh $SPARK_DIR/conf/spark-env.sh
 echo "HADOOP_CONF_DIR=$HADOOP_DIR/etc/hadoop" >> $SPARK_DIR/conf/spark-env.sh
 
 
@@ -245,6 +251,7 @@ echo "hibench.hdfs.master   hdfs://{{master_hostname}}:9000" >> $HIBENCH_DIR/con
 echo "hibench.spark.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.master   spark://{{master_hostname}}:7077" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.version   spark2.2" >> $HIBENCH_DIR/conf/spark.conf
+sudo chown -R $USERNAME:$USERNAME $HIBENCH_DIR
 echo -e "${GREEN}*********** HiBench Done ************${NC}"
 
 cd /opt
@@ -252,26 +259,63 @@ cd /opt
 ## Bandwidth throttler
 echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
-git clone https://github.com/alexandruc16/bandwidth-throttler.git
-rm -rf /usr/bin/shape_traffic
-mkdir /usr/bin/shape_traffic
-cp /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
+sudo git clone https://github.com/alexandruc16/bandwidth-throttler.git
+sudo cp -a /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
 ## TPC-DS
 echo -e "${YELLOW}Preparing TPC-DS${NC}"
 rm -rf /opt/spark-tpc-ds-performance-test
-git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
+sudo git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
 echo "Finished installing packages" >> /var/log/context.log
 
+## BigBench (TPCx-BB)
+export INSTALL_DIR="/opt/big-bench"
+cd $INSTALL_DIR
+sudo git clone https://github.com/intel-hadoop/Big-Data-Benchmark-for-Big-Bench.git
+
+## Hive
+if [ -z "$HIVE_HOME" ]; then
+    echo -e "${YELLOW}Installing Hive v2.3.3${NC}"
+    wget https://archive.apache.org/dist/hive/hive-2.3.3/apache-hive-2.3.3-bin.tar.gz -P $DOWNLOAD_DIR
+    tar -xzf $DOWNLOAD_DIR/apache-hive-2.3.3-bin.tar.gz -C $DOWNLOAD_DIR
+    if [ ! -d $HIVE_DIR ]; then
+        mkdir $HIVE_DIR
+    fi
+    mv $DOWNLOAD_DIR/apache-hive-2.3.3-bin/* $HADOOP_DIR
+    echo "export HIVE_HOME=$HIVE_DIR" >> $ENVIRONMENT
+    source $ENVIRONMENT
+    echo "export PATH=$PATH:$HIVE_DIR" >> $ENVIRONMENT
+    $HADOOP_DIR/bin/hdfs dfs -mkdir -p /$USERNAME/hive/warehouse
+    $HADOOP_DIR/bin/hdfs dfs -mkdir /tmp
+    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /$USERNAME/hive/warehouse
+    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /tmp
+    echo "HADOOP_HOME=$HADOOP_DIR" >> $HIVE_DIR/conf/hive-env.sh
+    echo "HIVE_CONF_DIR=$HIVE_DIR/conf" >> $HIVE_DIR/conf/hive-env.sh
+    $HIVE_DIR/bin/schematool -initSchema -dbType derby
+    echo -e "${GREEN}***** HIVE DONE! *****${NC}"
+fi
+
+## Graphalytics
+sudo rm -rf $GRAPHALYTICS_CORE_DIR
+sudo mkdir $GRAPHALYTICS_CORE_DIR
+wget https://github.com/ldbc/ldbc_graphalytics/archive/v0.9.0.tar.gz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/v0.9.0.tar.gz -C $DOWNLOAD_DIR
+sudo mv $DOWNLOAD_DIR/ldbc_graphalytics-0.9.0/* $GRAPHALYTICS_CORE_DIR
+cd $GRAPHALYTICS_CORE_DIR
+sudo mvn clean install
+wget https://github.com/atlarge-research/graphalytics-platforms-graphx/archive/v0.1.tar.gz -P $DOWNLOAD_DIR
+tar -xzf $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1.tar.gz -C $DOWNLOAD_DIR
+cd $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1
+# mvn package # crashes -> cannot find graphalytics core in central Maven repository
+
+
 # Set hostname
 echo $HOSTNAME > /etc/hostname
 hostname $HOSTNAME
-sed -i "s/.*127\.0\.0\.1.*/127\.0\.0\.1 localhost $HOSTNAME/" /etc/hosts
-sed -i "s/.*127\.0\.1\.1.*/127\.0\.1\.1 $HOSTNAME/" /etc/hosts
 
 # Restart SSH
 sudo service ssh restart &>> /var/log/context.log

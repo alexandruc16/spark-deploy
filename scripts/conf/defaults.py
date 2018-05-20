@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 # hostname of master VM
-master_hostname = "alex-VM"
+master_hostname = "master.aca540"
 # IP address of master VM (string)
 master_ip = "10.140.0.133"
 # number of slaves to create (integer)
-num_slaves = 2
+num_slaves = 15
 # unique name for the cluster (string)
 cluster_name = "aca540"
 # templated id to use for the slaves (string)

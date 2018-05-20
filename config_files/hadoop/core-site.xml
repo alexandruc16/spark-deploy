@@ -7,7 +7,10 @@
 	    <name>yarn.nodemanager.aux-services</name>
 	    <value>mapreduce_shuffle</value>
 	</property>
-
+	<property>
+	    <name>hadoop.tmp.dir</name>
+	    <value>{{hadoop_tmp_dir}}</value>
+	</property>
 	<property>
 	    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
 	    <value>org.apache.hadoop.mapred.ShuffleHandler</value>

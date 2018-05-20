@@ -27,4 +27,17 @@ It does the following:
 - installs the following packages: ``gcc``, ``make``, ``flex``, ``bison``, ``byacc``, ``git``, ``sbt``, ``maven``, ``python2.7``, ``python-pip``, and the following Python packages: ``paramiko``, ``pyzmq``, ``psutil``
 - Installs and configures (or checks for): Oracle JDK v1.8.0, Hadoop v2.7.5, Scala v2.11.12, Spark v2.2.1, HiBench v7.0
 - Installs the IBM TCP-DS benchmark: https://github.com/IBM/spark-tpc-ds-performance-test
-- Installs Bandwidth Throttler: https://github.com/ovedanner/bandwidth-throttler
+- Installs Bandwidth Throttler: https://github.com/alexandruc16/bandwidth-throttler (forked from https://github.com/ovedanner/bandwidth-throttler)
+
+A script is included which throttles bandwidths between VMs according to a given distribution and interval at which to generate new values.
+
+Usage
+-----
+
+- Instantiate a VM to use as master
+- Set appropriate framework configfurations in the ``config_files`` folder
+- Verify ``scripts/conf/defaults.py`` settings
+- Run ``spark_deploy -m <master_ip>`` to spawn and configure the slave nodes
+- Start up the frameworks of your liking
+- Run benchmarks
+- Graduate :)

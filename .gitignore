@@ -1,2 +1,4 @@
-./idea
-
+.idea
+*.txt
+*.log
+*.log.*
