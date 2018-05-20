@@ -251,6 +251,7 @@ echo "hibench.hdfs.master   hdfs://{{master_hostname}}:9000" >> $HIBENCH_DIR/con
 echo "hibench.spark.home   $HADOOP_DIR" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.master   spark://{{master_hostname}}:7077" >> $HIBENCH_DIR/conf/spark.conf
 echo "hibench.spark.version   spark2.2" >> $HIBENCH_DIR/conf/spark.conf
+sudo chown -R $USERNAME:$USERNAME $HIBENCH_DIR
 echo -e "${GREEN}*********** HiBench Done ************${NC}"
 
 cd /opt
