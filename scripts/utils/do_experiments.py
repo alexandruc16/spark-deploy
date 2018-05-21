@@ -82,8 +82,8 @@ def set_bandwidth(workers, filename):
     print(command)
     
 
-def run_experiments(workers, typ):
-    if not typ == "":
+def run_experiments(workers, typ=None):
+    if not typ is None:
         filename = "/opt/spark-deploy/scripts/utils/%s.txt" % typ
         set_bandwidth(workers, filename)
     
@@ -111,6 +111,8 @@ def run_experiments(workers, typ):
         print(typ + ": Running pagerank #" + str(i + 1))
         cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/websearch/pagerank/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
 
+    if typ is None:
+        typ = 'no_limit'
     fnam = '/opt/hibench/report/%s.report' % typ
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
     
@@ -123,7 +125,7 @@ def generate_bw_files(workers):
 def main():
     workers = get_workers()
     generate_bw_files(workers)
-    run_experiments(workers, "")
+    run_experiments(workers)
     run_experiments(workers, 'A')
     run_experiments(workers, 'B')
     run_experiments(workers, 'C')
