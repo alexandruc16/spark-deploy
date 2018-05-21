@@ -3,7 +3,11 @@ import itertools
 import paramiko
 import os
 import sys
+import time
 from subprocess import Popen, PIPE
+from time import sleep
+
+pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
 A = [440, 497, 489, 617, 290, 286, 359, 356, 244, 255, 218, 226, 63, 135, 116, 115]
 B = [916, 957, 924, 801, 754, 676, 758, 654, 584, 635, 557, 623, 443, 501, 409, 336]
