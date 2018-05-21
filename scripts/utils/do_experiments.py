@@ -77,7 +77,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username='aca540', master_i
     
     
 def set_bandwidth(workers, filename):
-    command = 'python /opt/bandwidth-throttler/shape_traffic_client.py --port 2221 --set-file %s\n' % filename 
+    command = 'nohup python /opt/bandwidth-throttler/shape_traffic_client.py --port 2221 --set-file %s 1>/dev/null 2>/dev/null &\n' % filename 
     issue_ssh_commands(workers, command)
     print(command)
     
@@ -86,6 +86,8 @@ def run_experiments(workers, typ=None):
     if not typ is None:
         filename = "/opt/spark-deploy/scripts/utils/%s.txt" % typ
         set_bandwidth(workers, filename)
+    else:
+        typ = "no_limit"
     
     for i in range(0, 10):
         print(typ + ": Running sort #" + str(i + 1))
@@ -110,15 +112,13 @@ def run_experiments(workers, typ=None):
     for i in range(0, 10):
         print(typ + ": Running pagerank #" + str(i + 1))
         cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/websearch/pagerank/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-
-    if typ is None:
-        typ = 'no_limit'
+    
     fnam = '/opt/hibench/report/%s.report' % typ
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
     
     
 def generate_bw_files(workers):
-    command = 'python /opt/spark-deploy/scripts/utils/generate_bw_files.py\n'
+    command = 'nohup python /opt/spark-deploy/scripts/utils/generate_bw_files.py 1>/dev/null 2>/dev/null &\n'
     issue_ssh_commands(workers, command)
     
 
