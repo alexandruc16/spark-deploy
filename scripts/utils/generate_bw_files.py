@@ -33,14 +33,14 @@ def generate_bw_files(workers, bw, filename):
             
 def main():
     workers = get_workers()
-    generate_bw_files(workers, A, "A.txt")
-    generate_bw_files(workers, B, "B.txt")
-    generate_bw_files(workers, C, "C.txt")
-    generate_bw_files(workers, D, "D.txt")
-    generate_bw_files(workers, E, "E.txt")
-    generate_bw_files(workers, F, "F.txt")
-    generate_bw_files(workers, G, "G.txt")
-    generate_bw_files(workers, H, "H.txt")
+    generate_bw_files(workers, A, "/opt/spark-deploy/scripts/utils/A.txt")
+    generate_bw_files(workers, B, "/opt/spark-deploy/scripts/utils/B.txt")
+    generate_bw_files(workers, C, "/opt/spark-deploy/scripts/utils/C.txt")
+    generate_bw_files(workers, D, "/opt/spark-deploy/scripts/utils/D.txt")
+    generate_bw_files(workers, E, "/opt/spark-deploy/scripts/utils/E.txt")
+    generate_bw_files(workers, F, "/opt/spark-deploy/scripts/utils/F.txt")
+    generate_bw_files(workers, G, "/opt/spark-deploy/scripts/utils/G.txt")
+    generate_bw_files(workers, H, "/opt/spark-deploy/scripts/utils/H.txt")
     
     
 
