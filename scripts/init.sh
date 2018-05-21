@@ -261,6 +261,9 @@ echo -e "${YELLOW}Installing bandwidth-throttler${NC}"
 rm -rf /opt/bandwidth-throttler
 sudo git clone https://github.com/alexandruc16/bandwidth-throttler.git
 sudo cp -a /opt/bandwidth-throttler/shape_traffic.sh /usr/bin/shape_traffic
+# start bandwidth-throttling server and monitoring service as daemons
+nohup python /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor.out /opt/bandwidth-throttler/monitor.in proc 9 1>/dev/null 2>/dev/null &
+nohup python /opt/bandwidth-throttler/shape_traffic_server.py --port 2221 1>/dev/null 2>/dev/null &
 echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 
 ## TPC-DS
