@@ -20,7 +20,7 @@ H = [953, 927, 679, 795, 552, 624, 531, 526, 436, 474, 466, 461, 332, 251, 355, 
 
 
 def get_workers():
-    rewsult = []
+    result = []
     
     with open('/usr/local/spark/conf/slaves') as f:
         result = [line.rstrip('\n') for line in f]

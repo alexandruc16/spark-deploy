@@ -25,7 +25,7 @@ def generate_bw_files(workers, bw, filename):
         for j in range(0, num_workers):
             if i == j:
                 continue
-            val = "%s:%s:%d" % (workers[i], workers[j], min(bw[i], bw[j]))
+            val = "%s:%s:%dkbit" % (workers[i], workers[j], min(bw[i], bw[j]))
             print >> f, val
             
     f.close()
