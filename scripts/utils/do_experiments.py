@@ -83,8 +83,8 @@ def set_bandwidth(workers, filename):
     
 
 def run_experiments(workers, typ=None):
-    if not typ is None:
-        filename = "/opt/spark-deploy/scripts/utils/%s.txt" % typ
+    if typ is not None:
+	filename = "/opt/spark-deploy/scripts/utils/%s.txt" % typ 
         set_bandwidth(workers, filename)
     else:
         typ = "no_limit"
