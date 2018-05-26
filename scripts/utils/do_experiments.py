@@ -82,10 +82,10 @@ def set_bandwidths(workers, values):
         command = ''
         
         if values is None:        
-            command = 'sudo wondershaper clear ens3\n'
+            command = 'sudo bash /opt/wondershaper/wondershaper -c -a ens3\n'
         else:
             value = 1024 * values[i]
-            command = 'sudo wondershaper ens3 %d %d\n' % (value, value)
+            command = 'sudo bash /opt/wondershaper/wondershaper -a ens3 -u %d -d %d\n' % (value, value)
     
         issue_ssh_commands([worker], command)
     

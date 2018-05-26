@@ -80,9 +80,11 @@ sudo apt-get -y upgrade 2>> /home/$USERNAME/contextualization.log
 
 ## dev tools
 echo -e "${YELLOW}Installing Development Tools${NC}"
-INSTALL_PKGS="gcc make flex bison byacc git maven sbt wondershaper"
+INSTALL_PKGS="gcc make flex bison byacc git maven sbt"
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 2>> /home/$USERNAME/contextualization.log
+cd /opt
+sudo git clone https://github.com/magnific0/wondershaper
 sudo apt-get update 2>> /home/$USERNAME/contextualization.log
 for pkg in $INSTALL_PKGS; do
     sudo apt-get -y install $pkg 2>> /home/$USERNAME/contextualization.log
