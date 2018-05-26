@@ -76,17 +76,23 @@ def issue_ssh_commands(slaves_list, commands, remote_username='aca540', master_i
 #    issue_ssh_commands(workers, command)
     
     
-def set_bandwidth(workers, filename):
-    command = 'nohup python /opt/bandwidth-throttler/shape_traffic_client.py --port 2221 --set-file %s 1>/dev/null 2>/dev/null &\n' % filename 
-    issue_ssh_commands(workers, command)
-    print(command)
+def set_bandwidths(workers, values):
+    for i in range(0, len(workers)):
+        worker = workers[i]
+        command = ''
+        
+        if values is None:        
+            command = 'sudo wondershaper clear ens3\n'
+        else:
+            command = 'sudo wondershaper ens3 %d %d\n' % (values[i], values[i])
+    
+        issue_ssh_commands([worker], command)
     
 
-def run_experiments(workers, typ=None):
-    if not typ is None:
-        filename = "/opt/spark-deploy/scripts/utils/%s.txt" % typ
-        set_bandwidth(workers, filename)
-    else:
+def run_experiments(workers, values=None, typ=None):
+    set_bandwidths(workers, values)
+    
+    if typ is None:
         typ = "no_limit"
     
     for i in range(0, 10):
@@ -126,14 +132,14 @@ def main():
     workers = get_workers()
     generate_bw_files(workers)
     run_experiments(workers)
-    run_experiments(workers, 'A')
-    run_experiments(workers, 'B')
-    run_experiments(workers, 'C')
-    run_experiments(workers, 'D')
-    run_experiments(workers, 'E')
-    run_experiments(workers, 'F')
-    run_experiments(workers, 'G')
-    run_experiments(workers, 'H')  
+    run_experiments(workers, A, 'A')
+    run_experiments(workers, B, 'B')
+    run_experiments(workers, C, 'C')
+    run_experiments(workers, D, 'D')
+    run_experiments(workers, E, 'E')
+    run_experiments(workers, F, 'F')
+    run_experiments(workers, G, 'G')
+    run_experiments(workers, H, 'H')  
     
 
 if __name__ == "__main__":
