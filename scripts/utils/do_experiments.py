@@ -79,13 +79,11 @@ def issue_ssh_commands(slaves_list, commands, remote_username='aca540', master_i
 def set_bandwidths(workers, values):
     for i in range(0, len(workers)):
         worker = workers[i]
-        command = ''
+        command = 'sudo bash /opt/wondershaper/wondershaper -c -a ens3\n'
         
-        if values is None:        
-            command = 'sudo bash /opt/wondershaper/wondershaper -c -a ens3\n'
-        else:
+        if values is not None:
             value = 1024 * values[i]
-            command = 'sudo bash /opt/wondershaper/wondershaper -a ens3 -u %d -d %d\n' % (value, value)
+            command += 'sudo bash /opt/wondershaper/wondershaper -a ens3 -u %d -d %d\n' % (value, value)
     
         issue_ssh_commands([worker], command)
     
