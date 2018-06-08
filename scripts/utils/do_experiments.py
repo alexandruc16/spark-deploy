@@ -9,14 +9,14 @@ from time import sleep
 
 pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
-A = [497, 286, 359, 226, 135, 489, 244, 116, 218, 290, 617, 356, 63, 115, 255, 440]
-B = [754, 501, 801, 924, 623, 557, 916, 635, 957, 336, 584, 409, 443, 654, 676, 758]
-C = [692, 894, 729, 921, 870, 855, 940, 910, 904, 939, 938, 930, 846, 792, 940, 680]
-D = [243, 117, 292, 117, 190, 169, 189, 184, 167, 138, 282, 168, 166, 130, 281, 137]
-E = [844, 809, 852, 791, 797, 834, 822, 856, 853, 852, 848, 830, 858, 858, 856, 853]
-F = [690, 846, 853, 814, 745, 741, 736, 791, 887, 800, 301, 789, 490, 703, 900, 770]
-G = [604, 556, 576, 417, 534, 533, 400, 613, 535, 487, 538, 584, 614, 602, 593, 480]
-H = [436, 332, 531, 795, 526, 461, 624, 260, 251, 355, 953, 466, 474, 552, 927, 679]
+A = [60.344, 149.999, 263.793, 384.482, 653.448]
+B = [308.620, 503.448, 646.551, 789.655, 991.379]
+C = [555.172, 841.379, 901.724, 934.482, 946.551]
+D = [112.068, 137.931, 170.689, 199.999, 298.275]
+E = [774.137, 824.137, 851.724, 855.172, 858.620]
+F = [268.965, 729.310, 777.586, 820.689, 925.862]
+G = [334.482, 529.310, 537.931, 600.000, 624.137]
+H = [136.206, 425.862, 525.862, 660.344, 998.275]
 
 def get_workers():
     result = []
@@ -85,10 +85,23 @@ def set_bandwidths(workers, values):
             command += 'sudo bash /opt/wondershaper/wondershaper -a ens3 -u %d -d %d\n' % (value, value)
     
         issue_ssh_commands([worker], command)
+        
+        
+def set_bw_distribution(workers, values):
+    for i in range(0, len(workers)):
+        worker = workers[i]
+        command = 'sudo pkill -f vary_bw.py\n'
+        
+        if values is not None:
+            s = " ".join(map(str, values))
+            command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i %d -d %s 1>/opt/spark-deploy/scripts/utils/vary.out 2>/opt/spark-deploy/scripts/utils/vary.err &\n' % (iv, s)
+    
+        issue_ssh_commands([worker], command)
     
 
 def run_experiments(workers, values=None, typ=None):
-    set_bandwidths(workers, values)
+    #set_bandwidths(workers, values)
+    set_bw_distribution(workers, values)
     
     if typ is None:
         typ = "no_limit"
