@@ -63,17 +63,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username='aca540', master_i
             print("Error occurred while issuing SSH commands to " + ip)
             print(commands)
             raise
-            
-
-#def start_monitor_bandwidths(workers):
-#    command = 'nohup python /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor.out /opt/bandwidth-throttler/monitor.in proc 9 1>/dev/null 2>/dev/null &\n'
-#    issue_ssh_commands(workers, command)
-
-
-#def start_bandwidth_throttling_servers(workers):
-#    command = 'python /opt/bandwidth-throttler/shape_traffic_server.py --port 2221\n'
-#    issue_ssh_commands(workers, command)
-    
+                
     
 def set_bandwidths(workers, values):
     for i in range(0, len(workers)):
@@ -87,14 +77,16 @@ def set_bandwidths(workers, values):
         issue_ssh_commands([worker], command)
         
         
-def set_bw_distribution(workers, values):
+def set_bw_distribution(workers, config_key, values):
     for i in range(0, len(workers)):
         worker = workers[i]
         command = 'sudo pkill -f vary_bw.py\n'
+        command += 'sudo pkill -f monitor_bandwidth.py\n'
         
         if values is not None:
             s = " ".join(map(str, values))
-            command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i %d -d %s 1>/opt/spark-deploy/scripts/utils/vary.out 2>/opt/spark-deploy/scripts/utils/vary.err &\n' % (iv, s)
+            command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limit_%s.out 2>/opt/spark-deploy/scripts/utils/limit_%s.err &\n' % (s, config_key, config_key)
+            command += 'nohup python -u /opt/bandwidth_throttler/monitor_bandwidth.py ens3 /opt/bandwidth_throttler/bw_%s.out /opt/bandwidth_throttler/bw_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (config_key, config_key)
     
         issue_ssh_commands([worker], command)
     
@@ -132,16 +124,10 @@ def run_experiments(workers, values=None, typ=None):
     
     fnam = '/opt/hibench/report/%s.report' % typ
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
-    
-    
-def generate_bw_files(workers):
-    command = 'nohup python /opt/spark-deploy/scripts/utils/generate_bw_files.py 1>/dev/null 2>/dev/null &\n'
-    issue_ssh_commands(workers, command)
-    
+           
 
 def main():
     workers = get_workers()
-    #generate_bw_files(workers)
     run_experiments(workers)
     run_experiments(workers, A, 'A')
     run_experiments(workers, B, 'B')

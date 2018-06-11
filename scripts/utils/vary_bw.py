@@ -26,7 +26,7 @@ def main():
     parser.add_argument("-i", "--interval", metavar="", dest="interval", type=int,
         action="store", help="interval (seconds) at which to generate a new value")
     parser.add_argument("-d", "--distribution", metavar="N", dest="distr", nargs=5,
-        type=int, action="store", help="interval at which to generate a new value")
+        type=float, action="store", help="interval at which to generate a new value")
     args = parser.parse_args()
       
     while True:

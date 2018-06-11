@@ -65,7 +65,9 @@ def generate_hibench_data(folder):
 def sort_experiments(configs):
     result = ['no_limit']
     
-    configs.remove('no_limit')
+    if "no_limit" in configs:
+        configs.remove('no_limit')
+    
     result.extend(sorted(configs))
 
     return result
@@ -87,7 +89,7 @@ def plot_hibench_results(data, folder):
         values = []
         
         for bandwidth_configuration in bandwidth_configurations:
-            if benchmark in data[bandwidth_configuration].data:
+            if bandwidth_configuration in data and benchmark in data[bandwidth_configuration].data:
                 values.append(data[bandwidth_configuration].data[benchmark])
             
         fig = plt.figure()
@@ -98,15 +100,15 @@ def plot_hibench_results(data, folder):
         plt.savefig(os.path.join(folder, benchmark + '_report.png'))
         plt.close(fig)
         
-
-def get_bw_files_per_node(folder):
+        
+def get_vary_files_per_node(folder):
     reports = []
     node_folders = sorted(os.listdir(folder))
     
     for i in range(0, len(node_folders)):
         files = dict()
         folder_path = os.path.join(folder, node_folders[i])
-        filenames = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.out')]
+        filenames = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f == "vary.out"]
         
         for f in filenames:
             last_modif_date = datetime.fromtimestamp(os.path.getmtime(f))
@@ -115,7 +117,7 @@ def get_bw_files_per_node(folder):
         reports.append(files)
         
     return reports
-    
+
     
 def plot_bandwidth_usage(config, start, end, node_files):
     for i in range(0, len(node_files)):
@@ -162,10 +164,42 @@ def plot_bandwidth_usage(config, start, end, node_files):
         
 
 def plot_hibench_bandwidths(benchmark_results, folder):
-    files = get_bw_files_per_node(folder)
+    reports = []
+    node_folders = sorted(os.listdir(folder))
     
-    for k, v in benchmark_results.items():
-        plot_bandwidth_usage(k, v.start, v.end, files)
+    for i in range(0, len(node_folders)):
+        for k, v in benchmark_results.items():
+            folder_name = os.path.dirname(node_folders[i])
+            out_bw_filename = os.path.join(folder_name, "monitor_%s.out" % k)
+            bw_limit_filename = os.path.join(folder_name, "vary_%s.out" % k)
+            bws = []
+            lims = []
+            
+            with open(out_bw_filename, 'r') as bw, open(bw_limit_filename, 'r') as lim:
+                out_bw = bw.readlines()
+                bw_limit = lim.readlines()
+                bw_len = len(out_bw)
+                lim_len = len(bw_limit)
+                last_lim = 0
+                
+                for j in range(0, bw_len):
+                    if j % 0 == 0 && j < lim_len:
+                        last_lim = float(bw_limit[j])
+                    
+                    bws = float(out_bw[j])
+                    lims = last_lim
+            
+            fig_name = os.path.join(folder_name, k + '_bw.png')
+            
+            fig = plt.figure()
+            plt.plot(bws, range(0, len(bws)), 'b')
+            plt.plot(lims, range(0, len(lims)), 'r')
+            plt.xlabel('time (s)')
+            plt.ylabel('bandwidth (MB/s)')
+            plt.savefig(fig_name)
+            plt.close(fig)
+        
+    return reports
 
 
 def main():
