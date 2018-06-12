@@ -87,7 +87,8 @@ def set_bw_distribution(workers, config_key, values):
             command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (config_key, config_key)
         
         if values is not None:
-            s = " ".join(map(str, values))
+            v = [1024 * x for x in values]
+            s = " ".join(map(str, v))
             command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, config_key, config_key)
     
         issue_ssh_commands([worker], command)
