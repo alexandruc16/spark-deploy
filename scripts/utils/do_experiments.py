@@ -84,7 +84,7 @@ def set_bw_distribution(workers, config_key, values):
         command += 'sudo pkill -f monitor_bandwidth.py\n'
         
         if config_key is not None:
-            command += 'nohup python -u /opt/bandwidth_throttler/monitor_bandwidth.py ens3 /opt/bandwidth_throttler/monitor_%s.out /opt/bandwidth_throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (config_key, config_key)
+            command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (config_key, config_key)
         
         if values is not None:
             s = " ".join(map(str, values))
