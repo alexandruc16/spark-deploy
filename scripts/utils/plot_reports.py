@@ -158,7 +158,7 @@ def plot_bandwidth_usage(config, start, end, node_files):
                 plt.plot(x_values, limits, 'r')
             
             plt.xlabel('time (s)')
-            plt.ylabel('bandwidth (MB/s)')
+            plt.ylabel('bandwidth (Mbps)')
             plt.savefig(fig_name)
             plt.close(fig)
         
@@ -169,31 +169,37 @@ def plot_hibench_bandwidths(benchmark_results, folder):
     
     for i in range(0, len(node_folders)):
         for k, v in benchmark_results.items():
-            folder_name = os.path.dirname(node_folders[i])
+            folder_name = os.path.join(folder, node_folders[i])
             out_bw_filename = os.path.join(folder_name, "monitor_%s.out" % k)
-            bw_limit_filename = os.path.join(folder_name, "vary_%s.out" % k)
+            bw_limit_filename = os.path.join(folder_name, "limits_%s.out" % k)
+            lims_lastmod = datetime.fromtimestamp(os.path.getmtime(out_bw_filename))
+            bws_lastmod = datetime.fromtimestamp(os.path.getmtime(bw_limit_filename))
             bws = []
             lims = []
             
             with open(out_bw_filename, 'r') as bw, open(bw_limit_filename, 'r') as lim:
-                out_bw = bw.readlines()
-                bw_limit = lim.readlines()
+                out_bw = list(reversed(bw.readlines()))
+                bw_limit = list(reversed(lim.readlines()))
                 bw_len = len(out_bw)
                 lim_len = len(bw_limit)
                 last_lim = 0
                 
                 for j in range(0, bw_len):
-                    if j % 0 == 0 && j < lim_len:
-                        last_lim = float(bw_limit[j])
+                    bws.insert(0, float(out_bw[j]))
+                    lims.insert(0, bw_limit[last_lim])
                     
-                    bws = float(out_bw[j])
-                    lims = last_lim
+                    bws_lastmod = bws_lastmod - timedelta(seconds=1)
+                    
+                    if bws_lastmod < lims_lastmod and last_lim < lim_len:
+                        lims_lastmod = lims_lastmod - timedelta(seconds=10)
+                        last_lim += 1
+                    
             
             fig_name = os.path.join(folder_name, k + '_bw.png')
             
             fig = plt.figure()
-            plt.plot(bws, range(0, len(bws)), 'b')
-            plt.plot(lims, range(0, len(lims)), 'r')
+            plt.plot(range(0, len(bws)), bws, 'b')
+            plt.plot(range(0, len(lims)), lims, 'r')
             plt.xlabel('time (s)')
             plt.ylabel('bandwidth (MB/s)')
             plt.savefig(fig_name)
