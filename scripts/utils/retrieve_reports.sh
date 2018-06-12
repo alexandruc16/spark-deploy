@@ -5,16 +5,13 @@
 mkdir reports
 
 cp /opt/hibench/report/*.report reports/
-cp /opt/bandwidth-throttler/monitor.* reports/
 
-NODES=$'\n' read -d '' -r -a lines < /usr/local/spark/conf/slaves
-
-for node in "$NODES[@]"
+while IFS= read -r node
 do
     mkdir reports/$node
     scp $node:/opt/bandwidth-throttler/monitor_* reports/$node/
     scp $node:/opt/spark-deploy/scripts/utils/limits_* reports/$node/
-fi
+done < "/usr/local/spark/conf/slaves"
 
 tar -cvf reports.tar reports/*
 

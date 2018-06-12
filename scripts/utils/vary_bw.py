@@ -31,8 +31,8 @@ def main():
       
     while True:
         value = str(get_value(args.distr))
-        out = Popen(["bash", "/opt/wondershaper/wondershaper", "-c", "-a", "ens3"], stdout = PIPE, stderr = PIPE).communicate()[0]
-        out = Popen(["bash", "/opt/wondershaper/wondershaper", "-a", "ens3", "-u", value, "-d", value], stdout = PIPE, stderr = PIPE).communicate()[0]
+        out = Popen(["sudo", "bash", "/opt/wondershaper/wondershaper", "-c", "-a", "ens3"], stdout = PIPE, stderr = PIPE).communicate()[0]
+        out = Popen(["sudo", "bash", "/opt/wondershaper/wondershaper", "-a", "ens3", "-u", value, "-d", value], stdout = PIPE, stderr = PIPE).communicate()[0]
         
         print(value)
         

@@ -219,11 +219,11 @@ def main():
                         help="Path to directory containing benchmark results.")
                         
     args = parser.parse_args()
-    master_folder = os.path.join(args.results_directory, 'master')
-    hibench_results = generate_hibench_data(master_folder)
+    #master_folder = os.path.join(args.results_directory, 'master')
+    hibench_results = generate_hibench_data(args.results_directory)
     
-    plot_hibench_results(hibench_results, master_folder)
-    plot_hibench_bandwidths(hibench_results, args.results_directory)
+    plot_hibench_results(hibench_results, args.results_directory)
+    #plot_hibench_bandwidths(hibench_results, args.results_directory)
     
 
 if __name__ == "__main__":
