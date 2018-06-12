@@ -27,11 +27,10 @@ def main():
         action="store", help="interval (seconds) at which to generate a new value")
     parser.add_argument("-d", "--distribution", metavar="N", dest="distr", nargs=5,
         type=float, action="store", help="interval at which to generate a new value")
-    args = str(parser.parse_args())
+    args = parser.parse_args()
       
     while True:
-        value = get_value(args.distr)
-        
+        value = str(get_value(args.distr))
         out = Popen(["bash", "/opt/wondershaper/wondershaper", "-c", "-a", "ens3"], stdout = PIPE, stderr = PIPE).communicate()[0]
         out = Popen(["bash", "/opt/wondershaper/wondershaper", "-a", "ens3", "-u", value, "-d", value], stdout = PIPE, stderr = PIPE).communicate()[0]
         
