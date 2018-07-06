@@ -2,6 +2,7 @@
 
 import argparse
 import conf.defaults as defaults
+import oca
 import os
 import paramiko
 import re
@@ -111,23 +112,45 @@ def scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
         raise
 
 
-def spawn_slaves(cluster_name, slave_template, num_slaves):
+def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_user=None, api_pass=None):
     slaves_dict = {}
+    
+    if (api_url is not None or api_user is not None or api_pass is not None) and
+        (api_url is None or api_user is None or api_pass is None):
+        print("If using OpenNebula Cloud API please set the API URL and credentials appropriately in conf/defaults.py")
+        sys.exit(1)
 
     print("Creating Slave Nodes...")
+    
     try:
-        for i in range(1, num_slaves + 1):
-            # name the slave
-            slave_name = "slave" + str(i) + "." + cluster_name
-            result = Popen(["onetemplate", "instantiate",
-                            slave_template, "--name", slave_name],
-                           stdout=PIPE).communicate()[0]
+        if api_url is None and api_user is None and api_pass is None:
+            for i in range(1, num_slaves + 1):
+                # name the slave
+                slave_name = "slave" + str(i) + "." + cluster_name
+                result = Popen(["onetemplate", "instantiate",
+                                slave_template, "--name", slave_name],
+                               stdout=PIPE).communicate()[0]
 
-            slave_id = result.strip('VM ID: ').strip('\n')
-            vm_info = Popen(["onevm", "show", str(slave_id)],
-                            stdout=PIPE).communicate()[0]
-            ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
-            slaves_dict[slave_name] = ip_list[0]
+                slave_id = result.strip('VM ID: ').strip('\n')
+                vm_info = Popen(["onevm", "show", str(slave_id)],
+                                stdout=PIPE).communicate()[0]
+                ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
+                slaves_dict[slave_name] = ip_list[0]
+        else:
+            vm_ids = []
+            client = oca.Client(api_user + ":" + api_pass, api_url)
+            vm_templ = oca.VmTemplatePool(client)
+            
+            for templ in vm_templ:
+                if templ.id == slave_template:
+                    for i in range(1, num_slaves + 1):
+                        slave_name = "slave" + str(i) + "." + cluster_name
+                        vm_ids.append(templ.instantiate(slave_name))
+            
+            vm_pool = oca.VirtualMachinePool(client)
+            
+            for vm in vm_pool:
+                slaves_dict[slave_name] = vm.template.nics[0].ip
     except:
         raise
 
@@ -323,7 +346,17 @@ def main():
                                      "PDC Cloud.", epilog = "Example Usage: "
                                      "./spark_deploy.py -c cluster1 -n 5 -m "
                                      "10.10.10.10")
-
+    parser.add_argument("-r", action="store_true", dest="use_cloud_api",
+                        help="Use ONE Cloud API")
+    parser.add_argument("--url", metavar="", dest="api_url",
+                        action="store", default=defaults.api_url,
+                        help="OpenNebula Cloud API URL")
+    parser.add_argument("--user", metavar="", dest="api_user",
+                        action="store", default=defaults.api_user,
+                        help="OpenNebula Cloud API Username")
+    parser.add_argument("--pass", metavar="", dest="api_pass",
+                        action="store", default=defaults.api_pass,
+                        help="OpenNebula Cloud API password")
     parser.add_argument("-c", "--name", metavar="", dest="cluster_name",
                         action="store",
                         default=defaults.cluster_name,
@@ -359,6 +392,11 @@ def main():
     spark_dir = defaults.spark_dir
     hibench_dir = defaults.hibench_dir
     remote_username = defaults.remote_username
+    use_cloud_api = isset(args.use_cloud_api)
+    api_url = defaults.api_url
+    api_user = defaults.api_user
+    api_pass = defaults.api_pass
+    
 
     if dryrun:
         print("\n")
