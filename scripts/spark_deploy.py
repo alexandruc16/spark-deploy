@@ -115,7 +115,7 @@ def scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
 def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_user=None, api_pass=None):
     slaves_dict = {}
     
-    if (api_url is not None or api_user is not None or api_pass is not None) and
+    if (api_url is not None or api_user is not None or api_pass is not None) and \
         (api_url is None or api_user is None or api_pass is None):
         print("If using OpenNebula Cloud API please set the API URL and credentials appropriately in conf/defaults.py")
         sys.exit(1)
