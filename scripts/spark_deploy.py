@@ -2,7 +2,7 @@
 
 import argparse
 import conf.defaults as defaults
-import oca
+#import oca
 import os
 import paramiko
 import re
@@ -136,21 +136,21 @@ def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_use
                                 stdout=PIPE).communicate()[0]
                 ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
                 slaves_dict[slave_name] = ip_list[0]
-        else:
-            vm_ids = []
-            client = oca.Client(api_user + ":" + api_pass, api_url)
-            vm_templ = oca.VmTemplatePool(client)
+        #else:
+            #vm_ids = []
+            #client = oca.Client(api_user + ":" + api_pass, api_url)
+            #vm_templ = oca.VmTemplatePool(client)
             
-            for templ in vm_templ:
-                if templ.id == slave_template:
-                    for i in range(1, num_slaves + 1):
-                        slave_name = "slave" + str(i) + "." + cluster_name
-                        vm_ids.append(templ.instantiate(slave_name))
+            #for templ in vm_templ:
+            #    if templ.id == slave_template:
+            #        for i in range(1, num_slaves + 1):
+            #            slave_name = "slave" + str(i) + "." + cluster_name
+            #            vm_ids.append(templ.instantiate(slave_name))
             
-            vm_pool = oca.VirtualMachinePool(client)
+            #vm_pool = oca.VirtualMachinePool(client)
             
-            for vm in vm_pool:
-                slaves_dict[slave_name] = vm.template.nics[0].ip
+            #for vm in vm_pool:
+            #    slaves_dict[slave_name] = vm.template.nics[0].ip
     except:
         raise
 
