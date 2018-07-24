@@ -392,7 +392,7 @@ def main():
     spark_dir = defaults.spark_dir
     hibench_dir = defaults.hibench_dir
     remote_username = defaults.remote_username
-    use_cloud_api = isset(args.use_cloud_api)
+    #use_cloud_api = isset(args.use_cloud_api)
     api_url = defaults.api_url
     api_user = defaults.api_user
     api_pass = defaults.api_pass
