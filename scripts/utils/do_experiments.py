@@ -114,6 +114,12 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Formating hadoop namenode")
     cmd_res = Popen(["hdfs", '-namenode', '-format'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
+    print("Starting hadoop")
+    cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    
+    print("Starting spark")
+    cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
     cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
@@ -122,11 +128,11 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
 def run_hibench_experiment(experiment, exp_folder, workers, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
     for i in range(0, times):
-        print(typ + ": Running " + experiment + " #" + str(i + 1))
+        print(experiment + ": Running " + experiment + " #" + str(i + 1))
         cmd_res = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE).communicate()[0]
     
     
-def do_hibench_experiment(experiment, exp_folder, workers)
+def do_hibench_experiment(experiment, exp_folder, workers):
     set_bw_distribution(workers, experiment, 'no_limit', None)
     prepare_hibench_experiment(experiment, exp_folder, workers)
     run_hibench_experiment(experiment, exp_folder, workers, 10)
