@@ -9,6 +9,6 @@
     </property>
     <property>
         <name>dfs.replication</name>
-        <value>{{num_workers}}</value>
+        <value>3</value>
     </property>
 </configuration>

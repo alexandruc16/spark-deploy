@@ -1,10 +1,6 @@
 #!/bin/sh
 
 # run this from the hibench directory to set everything up
-
-hdfs namenode -format
-bash /usr/local/hadoop/sbin/start-all.sh
-bash /usr/local/spark/sbin/start-all.sh
 mvn -Psparkbench -Dspark=2.2 -Dscala=2.11 clean package
 bash /opt/hibench/bin/workloads/micro/sort/prepare/prepare.sh
 bash /opt/hibench/bin/workloads/micro/terasort/prepare/prepare.sh

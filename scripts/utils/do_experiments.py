@@ -9,14 +9,16 @@ from time import sleep
 
 pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
-A = [60.344, 149.999, 263.793, 384.482, 653.448]
-B = [308.620, 503.448, 646.551, 789.655, 991.379]
-C = [555.172, 841.379, 901.724, 934.482, 946.551]
-D = [112.068, 137.931, 170.689, 199.999, 298.275]
-E = [774.137, 824.137, 851.724, 855.172, 858.620]
-F = [268.965, 729.310, 777.586, 820.689, 925.862]
-G = [334.482, 529.310, 537.931, 600.000, 624.137]
-H = [136.206, 425.862, 525.862, 660.344, 998.275]
+BANDWIDTH_CONFIGURATIONS = {
+    'A': [60.344, 149.999, 263.793, 384.482, 653.448],
+    'B': [308.620, 503.448, 646.551, 789.655, 991.379],
+    'C': [555.172, 841.379, 901.724, 934.482, 946.551],
+    'D': [112.068, 137.931, 170.689, 199.999, 298.275],
+    'E': [774.137, 824.137, 851.724, 855.172, 858.620],
+    'F': [268.965, 729.310, 777.586, 820.689, 925.862],
+    'G': [334.482, 529.310, 537.931, 600.000, 624.137],
+    'H': [136.206, 425.862, 525.862, 660.344, 998.275]
+}
 
 def get_workers():
     result = []
@@ -77,70 +79,84 @@ def set_bandwidths(workers, values):
         issue_ssh_commands([worker], command)
         
         
-def set_bw_distribution(workers, config_key, values):
+def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
     for i in range(0, len(workers)):
         worker = workers[i]
         command = 'sudo pkill -f vary_bw.py\n'
         command += 'sudo pkill -f monitor_bandwidth.py\n'
         
-        if config_key is not None:
-            command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (config_key, config_key)
-        
-        if values is not None:
-            v = [1024 * x for x in values]
-            s = " ".join(map(str, v))
-            command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, config_key, config_key)
+        if experiment is not None and config_key is not None:
+            file_id = "%s_%s" % (experiment, config_key)
+            
+            command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (file_id, file_id)
+            
+            if values is not None:
+                v = [1024 * x for x in values]
+                s = " ".join(map(str, v))
+                command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, file_id, file_id)
     
         issue_ssh_commands([worker], command)
+        
+        
+def prepare_hibench_experiment(experiment, exp_folder, workers):
+    print("Preparing experiment: " + experiment)
     
-
-def run_experiments(workers, values=None, typ=None):
-    #set_bandwidths(workers, values)
+    print("Stopping hadoop")
+    cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
-    if typ is None:
-        typ = "no_limit"
-        
-    set_bw_distribution(workers, typ, values)
+    print("Stopping spark")
+    cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
-    for i in range(0, 10):
-        print(typ + ": Running sort #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/micro/sort/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-    for i in range(0, 10):
-        print(typ + ": Running terasort #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/micro/terasort/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-    for i in range(0, 10):
-        print(typ + ": Running wordcount #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/micro/wordcount/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-    for i in range(0, 10):
-        print(typ + ": Running bayes #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/ml/bayes/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-    for i in range(0, 10):
-        print(typ + ": Running kmeans #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/ml/kmeans/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-    for i in range(0, 10):
-        print(typ + ": Running pagerank #" + str(i + 1))
-        cmd_res = Popen(["bash", '/opt/hibench/bin/workloads/websearch/pagerank/spark/run.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print("Clearing namenode files")
+    cmd_res = Popen(["rm", '-rf', '/usr/local/hadoop/dfs/name'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    cmd_res = Popen(["mkdir", '-P', '/usr/local/hadoop/dfs/name/data'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
-    fnam = '/opt/hibench/report/%s.report' % typ
+    print("Formating hadoop namenode")
+    cmd_res = Popen(["hdfs", '-namenode', '-format'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    
+    print("Generating data for experiment: " + experiment)
+    prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
+    cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+    
+    
+def run_hibench_experiment(experiment, exp_folder, workers, times):
+    run_location = os.path.join(exp_folder, 'spark/run.sh')
+    for i in range(0, times):
+        print(typ + ": Running " + experiment + " #" + str(i + 1))
+        cmd_res = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+    
+    
+def do_hibench_experiment(experiment, exp_folder, workers)
+    set_bw_distribution(workers, experiment, 'no_limit', None)
+    prepare_hibench_experiment(experiment, exp_folder, workers)
+    run_hibench_experiment(experiment, exp_folder, workers, 10)
+    
+    bandwidth_configs = sorted(BANDWIDTH_CONFIGURATIONS.keys())
+    
+    for key in bandwidth_configs:
+        set_bw_distribution(workers, experiment, key, BANDWIDTH_CONFIGURATIONS[key])
+        run_hibench_experiment(experiment, exp_folder, workers, 10)
+    
+    fnam = '/opt/hibench/report/%s.report' % experiment    
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
-           
+    
+    
+def do_hibench_experiments(workers):
+    do_hibench_experiment('sort', '/opt/hibench/bin/workloads/micro/sort', workers)
+    do_hibench_experiment('terasort', '/opt/hibench/bin/workloads/micro/terasort', workers)
+    do_hibench_experiment('wordcount', '/opt/hibench/bin/workloads/micro/wordcount', workers)
+    do_hibench_experiment('kmeans', '/opt/hibench/bin/workloads/micro/kmeans', workers)
+    do_hibench_experiment('bayes', '/opt/hibench/bin/workloads/ml/bayes', workers)
+    do_hibench_experiment('pagerank', '/opt/hibench/bin/workloads/websearch/pagerank', workers)
+    
+    print("Finished running experiments")
+    set_bw_distribution(workers, None, None, None) # clear bw limits when done
+    print("Cleared bandwidth limits and stopped monitors. All done!")
+    
 
 def main():
     workers = get_workers()
-    run_experiments(workers)
-    run_experiments(workers, A, 'A')
-    run_experiments(workers, B, 'B')
-    run_experiments(workers, C, 'C')
-    run_experiments(workers, D, 'D')
-    run_experiments(workers, E, 'E')
-    run_experiments(workers, F, 'F')
-    run_experiments(workers, G, 'G')
-    run_experiments(workers, H, 'H')
+    do_hibench_experiments(workers)
     set_bw_distribution(workers, None, None)
     
 
