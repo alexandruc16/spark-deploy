@@ -184,8 +184,7 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
     nodes_online = []
     
     for node in nodes_dict.iterkeys():
-        s = "%s\t%s" % (nodes_dict[node], node)
-        ssh_commands += "echo \"%s\" | sudo tee -a /etc/hosts\n" % s
+        ssh_commands += "echo '%s %s' | sudo tee -a /etc/hosts\n" % (nodes_dict[node], node)
     
     while ips_count > 0:
         for ip in ips:
