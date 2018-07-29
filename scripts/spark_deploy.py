@@ -2,7 +2,7 @@
 
 import argparse
 import conf.defaults as defaults
-import oca
+import pyone
 import os
 import paramiko
 import re
@@ -138,19 +138,34 @@ def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_use
                 slaves_dict[slave_name] = ip_list[0]
         else:
             vm_ids = []
-            client = oca.Client(api_user + ":" + api_pass, api_url)
-            vm_templ = oca.VmTemplatePool(client)
-            
-            for templ in vm_templ:
-                if templ.id == slave_template:
-                    for i in range(1, num_slaves + 1):
-                        slave_name = "slave" + str(i) + "." + cluster_name
-                        vm_ids.append(templ.instantiate(slave_name))
-            
-            vm_pool = oca.VirtualMachinePool(client)
-            
-            for vm in vm_pool:
-                slaves_dict[slave_name] = vm.template.nics[0].ip
+            one = pyone.OneServer(api_url, session=api_user + ":" + api_pass)
+
+            for i in range(1, num_slaves + 1):
+                slave_name = "slave" + str(i) + "." + cluster_name
+                vm_id = one.template.instantiate(int(slave_template), slave_name, False, "", False)
+                vm_ids.append(vm_id)
+                slaves_dict[slave_name] = one.vm.info(vm_id).TEMPLATE['NIC'][0]['IP']
+
+            running_vms = 0
+
+            while running_vms != num_slaves:
+                for vm_id in vm_ids:
+                    vm_state = one.vm.info(vm_id).LCM_STATE
+
+                    if vm_state == 3:  # vm is running
+                        running_vms += 1
+                    elif vm_state != 1:
+                        vms = one.vmpool.info(-2, -1, -1, -2).VM  # get all VMs
+                        slave_names = slaves_dict.keys()
+
+                        for vm in vms:
+                            if vm.NAME in slave_names and vm.ID != vm_id:
+                                one.vm.action("terminate-hard", vm.ID)
+
+                        raise Exception("Failed to create VM with ID " + vm_id)
+
+                sleep(10)
+
     except:
         raise
 
