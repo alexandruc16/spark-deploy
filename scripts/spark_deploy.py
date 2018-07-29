@@ -293,6 +293,7 @@ def start_hadoop(hadoop_dir, master_hostname, remote_username):
     issue_ssh_commands([], ssh_command, remote_username, master_hostname)
     print('Hadoop started!')
 
+
 def start_spark(spark_dir, master_hostname, master_ip, slaves_list, remote_username):
     print('Starting Spark..')
     ssh_command = 'bash %s\n' % os.path.join(spark_dir, 'sbin/start-master.sh')
@@ -303,6 +304,7 @@ def start_spark(spark_dir, master_hostname, master_ip, slaves_list, remote_usern
     
     issue_ssh_commands(slaves_list, ssh_command, remote_username)    
     print('Spark started!')
+
 
 def check_args(args):
     try:
@@ -376,7 +378,7 @@ def main():
     args = parser.parse_args()
 
 # Verify arguments
-    args = check_args(args)
+    #args = check_args(args)
 
 # If args verified and there were no errors
 # set variables
@@ -392,7 +394,7 @@ def main():
     spark_dir = defaults.spark_dir
     hibench_dir = defaults.hibench_dir
     remote_username = defaults.remote_username
-    use_cloud_api = isset(args.use_cloud_api)
+    use_cloud_api = True
     api_url = defaults.api_url
     api_user = defaults.api_user
     api_pass = defaults.api_pass
@@ -432,7 +434,7 @@ def main():
         print("Ok, Exit...")
         sys.exit(0)
 
-    slaves_dict = spawn_slaves(cluster_name, slave_template, num_slaves)
+    slaves_dict = spawn_slaves(cluster_name, slave_template, num_slaves, api_url, api_user, api_pass)
     slave_hostnames = []
     print("\n")
     for slave_id, hostname in slaves_dict.items():
