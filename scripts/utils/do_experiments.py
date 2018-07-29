@@ -103,26 +103,34 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     
     print("Stopping hadoop")
     cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Stopping spark")
     cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Clearing namenode files")
     cmd_res = Popen(["rm", '-rf', '/usr/local/hadoop/dfs/name'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     cmd_res = Popen(["mkdir", '-P', '/usr/local/hadoop/dfs/name/data'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Formating hadoop namenode")
-    cmd_res = Popen(["hdfs", '-namenode', '-format'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Starting hadoop")
     cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Starting spark")
     cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
     cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     
 def run_hibench_experiment(experiment, exp_folder, workers, times):
