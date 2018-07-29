@@ -167,5 +167,12 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except:
+        print("Stopping hadoop")
+        cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        
+        print("Stopping spark")
+        cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
 
