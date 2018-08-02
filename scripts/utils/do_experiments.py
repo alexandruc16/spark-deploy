@@ -151,7 +151,7 @@ def do_hibench_experiments(workers):
     do_hibench_experiment('sort', '/opt/hibench/bin/workloads/micro/sort', workers)
     do_hibench_experiment('terasort', '/opt/hibench/bin/workloads/micro/terasort', workers)
     do_hibench_experiment('wordcount', '/opt/hibench/bin/workloads/micro/wordcount', workers)
-    do_hibench_experiment('kmeans', '/opt/hibench/bin/workloads/micro/kmeans', workers)
+    do_hibench_experiment('kmeans', '/opt/hibench/bin/workloads/ml/kmeans', workers)
     do_hibench_experiment('bayes', '/opt/hibench/bin/workloads/ml/bayes', workers)
     do_hibench_experiment('pagerank', '/opt/hibench/bin/workloads/websearch/pagerank', workers)
     
