@@ -238,7 +238,7 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     for slave_hostname in slaves_dict.keys():
         ssh_commands += 'sudo echo \'%s\' >> %s\n' % (slave_hostname, os.path.join(spark_dir, 'conf/slaves'))
         
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username)
     print('Spark configured!')
 
 
