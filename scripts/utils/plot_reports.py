@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 
 
-BANDWIDTH_CONFIGS = ['no_limit', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+BANDWIDTH_CONFIGURATIONS = ['no_limit', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 ITERATIONS_PER_TEST = 10
 
         
@@ -27,7 +27,7 @@ def generate_hibench_data(folder):
                 measurements.append(float(raw_data[4]))
                 
                 if (i + 1) % ITERATIONS_PER_TEST == 0:
-                    results[benchmark_name][BANDWIDTH_CONFIGS[i / ITERATIONS_PER_TEST]] = measurements
+                    results[benchmark_name][BANDWIDTH_CONFIGURATIONS[i / ITERATIONS_PER_TEST]] = measurements
                     measurements = []
                 
                 i += 1
@@ -48,11 +48,11 @@ def plot_hibench_results(data, folder):
         plt.xticks(range(1, len(BANDWIDTH_CONFIGURATIONS) + 1), BANDWIDTH_CONFIGURATIONS)
         plt.ylim(ymin = 0)
         plt.ylabel('makespan (s)')
-        plt.savefig(os.path.join(folder, benchmark + '_report.png'))
+        plt.savefig(os.path.join(folder, experiment + '_report.png'))
         plt.close(fig)
 
 
-def plot_hibench_bandwidths(benchmark_results, folder):
+def plot_hibench_bandwidths(data, folder):
     for experiment in data.keys():
         values = []
         
@@ -60,28 +60,32 @@ def plot_hibench_bandwidths(benchmark_results, folder):
             if config in data[experiment].keys():
                 values.append(data[experiment][config])
                 
-    node_folders = sorted(os.listdir(folder))
+    node_folders = [os.path.join(folder, d) for d in os.listdir(folder) if os.path.isdir(os.path.join(folder, d))]
     
     for i in range(0, len(node_folders)):
         for experiment in data.keys():
             for config in BANDWIDTH_CONFIGURATIONS:
                 folder_name = os.path.join(folder, node_folders[i])
-                file_id = '%s_%s' (experiment, config)
-                out_bw_filename = os.path.join(folder_name, "monitor_%s.out" % k)
-                bw_limit_filename = os.path.join(folder_name, "limits_%s.out" % k)
+                file_id = '%s_%s' % (experiment, config)
+                out_bw_filename = os.path.join(folder_name, "monitor_%s.out" % file_id)
+                bw_limit_filename = os.path.join(folder_name, "limits_%s.out" % file_id)
                 
-                with open(out_bw_filename, 'r') as bw, open(bw_limit_filename, 'r') as lim:
-                    bws = map(float, out_bw_filename)
-                    lims = map(float, bw_lim_filename)
+                with open(out_bw_filename, 'r') as bw:
+                    bws = map(float, bw)
                     fig_name = os.path.join(folder_name, file_id + '_bw.png')
                     fig = plt.figure()
                     plt.plot(range(0, len(bws)), bws, 'b')
-                    plt.plot(range(0, len(lims)), lims, 'r')
                     plt.xlabel('time (s)')
                     plt.ylabel('bandwidth (MB/s)')
+                    
+                    if os.path.isfile(bw_limit_filename):
+                        with open(bw_limit_filename, 'r') as lim:
+                            lims = map(float, lim)
+                            plt.plot(range(0, len(lims)), lims, 'r')
+                    
                     plt.savefig(fig_name)
                     plt.close(fig)
-
+                    
 
 def main():
     parser = argparse.ArgumentParser(description="Generate plots from benchmark "
