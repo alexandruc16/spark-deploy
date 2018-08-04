@@ -107,9 +107,13 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Stopping spark")
     cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
-    print("Clearing namenode files")
-    cmd_res = Popen(["rm", '-rf', '/usr/local/hadoop/dfs/name'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    cmd_res = Popen(["mkdir", '-P', '/usr/local/hadoop/dfs/name/data'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print("Clearing Hadoop files")
+    command = 'rm -rf /usr/local/hadoop/tmp/*\n'
+    command += 'rm -rf /usr/local/hadoop/dfs/name/current\n'
+    command += 'rm -rf /usr/local/hadoop/dfs/name/data/current\n'
+    for i in range(0, len(workers)):
+        worker = workers[i]
+        issue_ssh_commands([worker], command)
     
     print("Formating hadoop namenode")
     cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
