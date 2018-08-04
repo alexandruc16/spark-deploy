@@ -112,7 +112,7 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     cmd_res = Popen(["mkdir", '-P', '/usr/local/hadoop/dfs/name/data'], stdout=PIPE, stderr=PIPE).communicate()[0]
     
     print("Formating hadoop namenode")
-    cmd_res = Popen(["hdfs", '-namenode', '-format'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
     
     print("Starting hadoop")
     cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
