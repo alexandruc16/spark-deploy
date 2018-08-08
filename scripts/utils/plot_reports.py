@@ -1,5 +1,6 @@
 import argparse
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 from datetime import datetime, timedelta
 
@@ -76,11 +77,12 @@ def plot_hibench_bandwidths(data, folder):
                     fig = plt.figure()
                     plt.plot(range(0, len(bws)), bws, 'b')
                     plt.xlabel('time (s)')
-                    plt.ylabel('bandwidth (MB/s)')
+                    plt.ylabel('bandwidth (Mbps)')
                     
                     if os.path.isfile(bw_limit_filename):
                         with open(bw_limit_filename, 'r') as lim:
-                            lims = map(float, lim)
+                            lims = [x / 1000 for x in map(float, lim)]
+                            lims = np.repeat(lims, 5)
                             plt.plot(range(0, len(lims)), lims, 'r')
                     
                     plt.savefig(fig_name)
