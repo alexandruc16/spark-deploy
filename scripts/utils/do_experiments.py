@@ -94,6 +94,9 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
                 v = [1024 * x for x in values]
                 s = " ".join(map(str, v))
                 command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, file_id, file_id)
+            else:
+                command += 'sudo bash /opt/wondershaper/wondershaper -a ens3 -u 1048576 -d 1048576\n'
+
     
         issue_ssh_commands([worker], command)
         
