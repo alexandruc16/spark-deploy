@@ -289,7 +289,13 @@ def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, 
         
     slaves_dict[master_hostname] = master_ip
     
-    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)    
+    issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
+    
+    hibench_slaves = " ".join(slaves_dict.keys())
+    ssh_commands = 'sudo sed -i \'s?%s?%s?g\' %s\n' % ('hibench.masters.hostnames', 'hibench.masters.hostnames ' + master_hostname, os.path.join(hibench_conf_dir, 'hibench.conf'))
+    ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % ('hibench.slaves.hostnames', 'hibench.slaves.hostnames ' + hibench_slaves, os.path.join(hibench_conf_dir, 'hibench.conf'))
+    issue_ssh_commands([], ssh_commands, remote_username, master_ip)
+    
     print('HiBench configured!')
 
 
