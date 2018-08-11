@@ -9,6 +9,7 @@ from time import sleep
 
 pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
+NO_LIMIT_CONFIGURATION = [999.000, 999.000, 999.000, 999.000, 999.000]
 BANDWIDTH_CONFIGURATIONS = {
     'A': [60.344, 149.999, 263.793, 384.482, 653.448],
     'B': [308.620, 503.448, 646.551, 789.655, 991.379],
@@ -94,6 +95,7 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
                 v = [1024 * x for x in values]
                 s = " ".join(map(str, v))
                 command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, file_id, file_id)
+
     
         issue_ssh_commands([worker], command)
         
@@ -120,13 +122,16 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     
     print("Starting hadoop")
     cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Starting spark")
     cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
     cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
     
     
 def run_hibench_experiment(experiment, exp_folder, workers, times):
@@ -137,7 +142,7 @@ def run_hibench_experiment(experiment, exp_folder, workers, times):
     
     
 def do_hibench_experiment(experiment, exp_folder, workers):
-    set_bw_distribution(workers, experiment, 'no_limit', None)
+    set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
     prepare_hibench_experiment(experiment, exp_folder, workers)
     run_hibench_experiment(experiment, exp_folder, workers, 10)
     
