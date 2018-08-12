@@ -164,6 +164,7 @@ if [ -z "$CMD_OUTPUT" ]; then
     mv $DOWNLOAD_DIR/hadoop-2.7.5/* $HADOOP_DIR
     if [ -z "$HADOOP_PREFIX" ]; then
         echo "export HADOOP_PREFIX=$HADOOP_DIR" >> $ENVIRONMENT
+        echo "export HADOOP_CONF_DIR=$HADOOP_DIR/etc/hadoop" >> $ENVIRONMENT
         echo "export HADOOP_MAPRED_HOME=$HADOOP_DIR" >> $ENVIRONMENT
         echo "export HADOOP_COMMON_HOME=$HADOOP_DIR" >> $ENVIRONMENT
         echo "export HADOOP_HDFS_HOME=$HADOOP_DIR" >> $ENVIRONMENT
@@ -281,27 +282,6 @@ export INSTALL_DIR="/opt/big-bench"
 cd $INSTALL_DIR
 sudo git clone https://github.com/intel-hadoop/Big-Data-Benchmark-for-Big-Bench.git
 
-## Hive
-if [ -z "$HIVE_HOME" ]; then
-    echo -e "${YELLOW}Installing Hive v2.3.3${NC}"
-    wget https://archive.apache.org/dist/hive/hive-2.3.3/apache-hive-2.3.3-bin.tar.gz -P $DOWNLOAD_DIR
-    tar -xzf $DOWNLOAD_DIR/apache-hive-2.3.3-bin.tar.gz -C $DOWNLOAD_DIR
-    if [ ! -d $HIVE_DIR ]; then
-        mkdir $HIVE_DIR
-    fi
-    mv $DOWNLOAD_DIR/apache-hive-2.3.3-bin/* $HADOOP_DIR
-    echo "export HIVE_HOME=$HIVE_DIR" >> $ENVIRONMENT
-    source $ENVIRONMENT
-    echo "export PATH=$PATH:$HIVE_DIR" >> $ENVIRONMENT
-    $HADOOP_DIR/bin/hdfs dfs -mkdir -p /$USERNAME/hive/warehouse
-    $HADOOP_DIR/bin/hdfs dfs -mkdir /tmp
-    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /$USERNAME/hive/warehouse
-    $HADOOP_DIR/bin/hdfs dfs -chmod g+w /tmp
-    echo "HADOOP_HOME=$HADOOP_DIR" >> $HIVE_DIR/conf/hive-env.sh
-    echo "HIVE_CONF_DIR=$HIVE_DIR/conf" >> $HIVE_DIR/conf/hive-env.sh
-    $HIVE_DIR/bin/schematool -initSchema -dbType derby
-    echo -e "${GREEN}***** HIVE DONE! *****${NC}"
-fi
 
 ## Graphalytics
 sudo rm -rf $GRAPHALYTICS_CORE_DIR
