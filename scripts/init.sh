@@ -141,7 +141,6 @@ HIBENCH_DIR=/opt/hibench
 SPARK_PERF_DIR=/opt/spark-perf
 BIGBENCH_DIR=/opt/big-bench
 HIVE_DIR=$PROJ_DIR/hive
-GRAPHALYTICS_CORE_DIR=/opt/graphalytics
 
 if [ ! -d $DOWNLOAD_DIR ]; then
     mkdir $DOWNLOAD_DIR
@@ -272,6 +271,9 @@ echo -e "${GREEN}*********** bandwidth-throttler Done ************${NC}"
 echo -e "${YELLOW}Preparing TPC-DS${NC}"
 rm -rf /opt/spark-tpc-ds-performance-test
 sudo git clone https://github.com/IBM/spark-tpc-ds-performance-test.git
+sudo chown -R $USERNAME:$USERNAME /opt/spark-tpc-ds-performance-test
+cd /opt/spark-tpc-ds-performance-test
+mvn clean install
 sed -i 's@export SPARK_HOME=@export SPARK_HOME='"$SPARK_DIR"'@g' /opt/spark-tpc-ds-performance-test/bin/tpcdsenv.sh
 echo -e "${GREEN}*********** TPC-DS Done ************${NC}"
 
@@ -284,20 +286,18 @@ sudo git clone https://github.com/intel-hadoop/Big-Data-Benchmark-for-Big-Bench.
 
 
 ## Graphalytics
-sudo rm -rf $GRAPHALYTICS_CORE_DIR
-sudo mkdir $GRAPHALYTICS_CORE_DIR
-wget https://github.com/ldbc/ldbc_graphalytics/archive/v0.9.0.tar.gz -P $DOWNLOAD_DIR
-tar -xzf $DOWNLOAD_DIR/v0.9.0.tar.gz -C $DOWNLOAD_DIR
-sudo mv $DOWNLOAD_DIR/ldbc_graphalytics-0.9.0/* $GRAPHALYTICS_CORE_DIR
-cd $GRAPHALYTICS_CORE_DIR
-sudo mvn clean install
-wget https://github.com/atlarge-research/graphalytics-platforms-graphx/archive/v0.1.tar.gz -P $DOWNLOAD_DIR
-tar -xzf $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1.tar.gz -C $DOWNLOAD_DIR
-cd $DOWNLOAD_DIR/graphalytics-platforms-graphx-0.1
-# mvn package # crashes -> cannot find graphalytics core in central Maven repository
+sudo rm -rf /opt/ldbc_graphalytics
+cd /opt/
+sudo git clone https://github.com/ldbc/ldbc_graphalytics.git
+sudo chown -R $USERNAME:$USERNAME /opt/ldbc_graphalytics
+cd /opt/ldbc_graphalytics
+mvn clean install
+cd /opt
+sudo git clone https://github.com/atlarge-research/graphalytics-platforms-graphx.git
+cd /opt/graphalytics-platforms-graphx
+mvn clean package -Dlicense.skip
 
-
-# Set hostname
+## Set hostname
 echo $HOSTNAME > /etc/hostname
 hostname $HOSTNAME
 
