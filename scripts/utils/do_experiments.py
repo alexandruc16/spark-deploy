@@ -103,14 +103,12 @@ def stop_cluster():
     print("Stopping Hadoop")
     try:
         cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
     except Exception as e:
         print(e)
 
     print("Stopping spark")
     try:
         cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
     except Exception as e:
         print(e)
 
@@ -119,14 +117,12 @@ def start_cluster():
     print("Starting hadoop")
     try:
         cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
     except Exception as e:
         print(e)
 
     print("Starting spark")
     try:
         cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
     except Exception as e:
         print(e)
 
@@ -148,7 +144,6 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Removing HiBench files")
     try:
         cmd_res = Popen(['hdfs', 'dfs', '-rmr', '/HiBench/*'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
     except Exception as e:
         print(e)
 
