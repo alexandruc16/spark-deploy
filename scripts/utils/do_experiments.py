@@ -146,17 +146,13 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
         print(e)
 
     start_cluster()
-    print("Removing HiBench files")
-    try:
-        cmd_res = Popen(['hdfs', 'dfs', '-rmr', '/HiBench/*'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    except Exception as e:
-        print(e)
 
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
 
     try:
         cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
     except Exception as e:
         print(e)
     
