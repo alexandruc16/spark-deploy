@@ -159,12 +159,14 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     
 def run_hibench_experiment(experiment, exp_folder, workers, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
+
     for i in range(0, times):
-        stop_cluster()
-        start_cluster()
+        #stop_cluster()
+        #start_cluster()
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
         cmd_res = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE).communicate()[0]
-    
+        print(cmd_res)
+    sleep(120)
     
 def do_hibench_experiment(experiment, exp_folder, workers):
     set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
