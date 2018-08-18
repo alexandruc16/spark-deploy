@@ -9,7 +9,7 @@ from time import sleep
 
 pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa"))
 
-NO_LIMIT_CONFIGURATION = [999.000, 999.000, 999.000, 999.000, 999.000]
+NO_LIMIT_CONFIGURATION = [1000.000, 1000.000, 1000.000, 1000.000, 1000.000]
 BANDWIDTH_CONFIGURATIONS = {
     'A': [60.344, 149.999, 263.793, 384.482, 653.448],
     'B': [308.620, 503.448, 646.551, 789.655, 991.379],
@@ -96,47 +96,77 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
                 s = " ".join(map(str, v))
                 command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, file_id, file_id)
 
-    
         issue_ssh_commands([worker], command)
-        
-        
+
+
+def stop_cluster():
+    print("Stopping Hadoop")
+    try:
+        cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
+
+    print("Stopping spark")
+    try:
+        cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
+
+
+def start_cluster():
+    print("Starting hadoop")
+    try:
+        cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
+
+    print("Starting spark")
+    try:
+        cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
+
+
 def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
-    
-    print("Stopping hadoop")
-    cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    
-    print("Stopping spark")
-    cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    
+    stop_cluster()
     print("Clearing Hadoop files")
+
     command = 'rm -rf /usr/local/hadoop/tmp/*\n'
     command += 'rm -rf /usr/local/hadoop/dfs/name/current\n'
     command += 'rm -rf /usr/local/hadoop/dfs/name/data/current\n'
+
     for i in range(0, len(workers)):
         worker = workers[i]
         issue_ssh_commands([worker], command)
-    
-    print("Formating hadoop namenode")
-    cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
-    
-    print("Starting hadoop")
-    cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    print(cmd_res)
-    
-    print("Starting spark")
-    cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    print(cmd_res)
-    
+
+    start_cluster()
+    print("Removing HiBench files")
+    try:
+        cmd_res = Popen(['hdfs', 'dfs', '-rmr', '/HiBench/*'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
+
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
-    cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
-    print(cmd_res)
+
+    try:
+        cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+        print(cmd_res)
+    except Exception as e:
+        print(e)
     
     
 def run_hibench_experiment(experiment, exp_folder, workers, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
     for i in range(0, times):
+        stop_cluster()
+        start_cluster()
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
         cmd_res = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE).communicate()[0]
     
@@ -172,7 +202,7 @@ def do_hibench_experiments(workers):
 def main():
     workers = get_workers()
     do_hibench_experiments(workers)
-    set_bw_distribution(workers, None, None)
+    print("Program ended")
     
 
 if __name__ == "__main__":
