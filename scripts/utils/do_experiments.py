@@ -88,12 +88,15 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
         
         if experiment is not None and config_key is not None:
             file_id = "%s_%s" % (experiment, config_key)
-            
+            command += 'rm -rf /opt/bandwidth-throttler/monitor_%s.in\n' % file_id
+            command += 'rm -rf /opt/bandwidth-throttler/monitor_%s.out\n' % file_id
             command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (file_id, file_id)
             
             if values is not None:
                 v = [1024 * x for x in values]
                 s = " ".join(map(str, v))
+                command += 'rm -rf /opt/spark-deploy/scripts/utils/limits_%s.out\n' % file_id
+                command += 'rm -rf /opt/spark-deploy/scripts/utils/limits_%s.err\n' % file_id
                 command += 'nohup python -u /opt/spark-deploy/scripts/utils/vary_bw.py -i 5 -d %s 1>/opt/spark-deploy/scripts/utils/limits_%s.out 2>/opt/spark-deploy/scripts/utils/limits_%s.err &\n' % (s, file_id, file_id)
 
         issue_ssh_commands([worker], command)
