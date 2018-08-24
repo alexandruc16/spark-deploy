@@ -10,3 +10,4 @@ val queries = tpcds.tpcds1_4Queries.filter(q => queryNames.exists(qn => qn.conta
 // Run the test, the test set is specified as tpcds1_4
 val experiment = tpcds.runExperiment(queries, iterations=5)
 experiment.waitForFinish(24*60*60)
+System.exit(0)
