@@ -9,3 +9,4 @@ val queryNames = List("q65-v1.4", "q68-v1.4", "q46-v1.4", "q19-v1.4", "q59-v1.4"
 val queries = tpcds.tpcds1_4Queries.filter(q => queryNames.exists(qn => qn.contains(q.name)))
 // Run the test, the test set is specified as tpcds1_4
 val experiment = tpcds.runExperiment(queries, iterations=5)
+experiment.waitForFinish(24*60*60)
