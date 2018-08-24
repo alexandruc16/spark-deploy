@@ -7,7 +7,7 @@ import com.databricks.spark.sql.perf.tpcds.TPCDSTables
 // Tables in TPC-DS benchmark used by experiments.
 // dsdgenDir is the directory for dsdgen (you need to compile dsdgen first).
 // scalefactor is the amount of data, GB
-val tables = new TPCDSTables(sqlContext, "/opt/tpcds-kit/tools", "32G")
+val tables = new TPCDSTables(sqlContext, "/opt/tpcds-kit/tools", "100G")
 // Generate data.
 tables.genData("hdfs:///tpcds", "parquet", true, false, false, false)
 // Create metastore tables in a specified database for your data.
