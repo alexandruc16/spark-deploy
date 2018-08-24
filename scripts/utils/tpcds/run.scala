@@ -1,4 +1,4 @@
-import com.databricks.spark.SparkContext
+import org.apache.spark.SparkContext
 val sc: SparkContext // should have been created after running spark-shell
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 // Set TPC-DS experiment
