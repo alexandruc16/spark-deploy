@@ -1,14 +1,6 @@
 import org.apache.spark.sql.SparkSession
 val spark = SparkSession.builder().getOrCreate()
 import spark.implicits._
-val resultsTable = spark.read.json("finaltest")
-val ts: Long  = System.currentTimeMillis / 1000
-val viewName = "sqlPerformance"
-resultsTable.createOrReplaceTempView(viewName)
-import org.apache.spark.SparkContext
-val sc: SparkContext // should have been created after running spark-shell
-val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-// this is used to implicitly convert an RDD to a DataFrame.
-import sqlContext.implicits._
-sqlContext.table(viewName)
-
+val tb = spark.read.json("hdfs:///spark/sql/performance")
+val filteredTable = tb.drop("configuration", "tags").select($"iteration", $"timestamp", explode($"results")).withColumn("runtime", ($"col.analysisTime" + $"col.parsingTime" + $"col.optimizationTime" + $"col.planningTime" + $"col.executionTime") / 1000.0).select($"timestamp", $"iteration", $"col.name", $"col.analysisTime", $"col.parsingTime", $"col.optimizationTime", $"col.planningTime", $"col.executionTime", $"runtime").groupBy($"timestamp", $"name").agg(collect_list("analysisTime").alias("analysisTimes"), collect_list("parsingTime").alias("parsingTimes"), collect_list("optimizationTime").alias("optimizationTimes"), collect_list("planningTime").alias("planningTimes"), collect_list("executionTime").alias("executionTimes"), collect_list("runtime").alias("runtimes")).sort($"timestamp", $"name")
+filteredTable.coalesce(1).write.format("json").save("hdfs://results")
