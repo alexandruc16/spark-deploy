@@ -15,3 +15,4 @@ tables.genData("hdfs:///tpcds", "parquet", true, false, false, false)
 tables.createExternalTables("hdfs:///tpcds", "parquet", "finaltest", false, false)
 // Create a temporary table
 tables.createTemporaryTables("hdfs:///tpcds", "parquet")
+System.exit(0)

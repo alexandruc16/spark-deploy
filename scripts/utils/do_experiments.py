@@ -200,6 +200,51 @@ def do_hibench_experiment(experiment, exp_folder, workers):
     
     fnam = '/opt/hibench/report/%s.report' % experiment    
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
+
+
+def run_tpcds_experiment(workers, bw_config):
+    try:
+        cmd_res = Popen(
+            "spark-shell --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client -i /opt/spark-deploy/scripts/utils/tpcds/run.scala",
+            shell=True, stdout=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+    set_bw_distribution(workers, None, None, None)  # clear bw limits when done
+
+    try:
+        cmd_res = Popen(
+            "spark-shell --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client -i /opt/spark-deploy/scripts/utils/tpcds/retrieve-results.scala",
+            shell=True, stdout=PIPE).communicate()[0]
+        out_location = "/opt/spark-deploy/scripts/utils/reports/%s" % bw_config
+        cmd_res = Popen(["hdfs", "dfs", "-get", "/results", out_location], stdout=PIPE, stderr=PIPE).communicate()[0]
+        cmd_res = Popen(["hdfs", "dfs", "-rmr", "/spark" "/results"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+
+def prepare_tpcds_experiments():
+    start_cluster()
+
+    try:
+        cmd_res = Popen(
+            "spark-shell --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client -i /opt/spark-deploy/scripts/utils/tpcds/prepare.scala",
+            shell=True, stdout=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+
+def do_tpcds_experiments(workers):
+    prepare_tpcds_experiments()
+    set_bw_distribution(workers, "tpcds", "no_limit", NO_LIMIT_CONFIGURATION)
+    run_tpcds_experiment(workers, "no_limit")
+    bandwidth_configs = sorted(BANDWIDTH_CONFIGURATIONS.keys())
+
+    for key in bandwidth_configs:
+        set_bw_distribution(workers, "tpcds", key, BANDWIDTH_CONFIGURATIONS[key])
+        run_tpcds_experiment(workers, key)
+
+    print("Finished running TPC-DS experiments")
     
     
 def do_hibench_experiments(workers):
@@ -210,14 +255,25 @@ def do_hibench_experiments(workers):
     do_hibench_experiment('bayes', '/opt/hibench/bin/workloads/ml/bayes', workers)
     do_hibench_experiment('pagerank', '/opt/hibench/bin/workloads/websearch/pagerank', workers)
     
-    print("Finished running experiments")
-    set_bw_distribution(workers, None, None, None) # clear bw limits when done
+    print("Finished running HiBench experiments")
+    set_bw_distribution(workers, None, None, None)  # clear bw limits when done
     print("Cleared bandwidth limits and stopped monitors. All done!")
     
+    
+def prepare_tpcds_experiments():
+    cmd_res = Popen(["spark-shell", "-i" "/opt/spark-deploy/scripts/utils/tpcds/prepare.scala"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
+    
+    
+def run_hibench_experiments():
+    cmd_res = Popen(["spark-shell", "-i" "/opt/spark-deploy/scripts/utils/tpcds/run.scala"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    print(cmd_res)
+
 
 def main():
     workers = get_workers()
-    do_hibench_experiments(workers)
+    #do_hibench_experiments(workers)
+    do_tpcds_experiments(workers)
     print("Program ended")
     
 
