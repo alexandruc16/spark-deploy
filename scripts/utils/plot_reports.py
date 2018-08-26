@@ -45,12 +45,25 @@ def plot_hibench_results(data, folder):
                 values.append(data[experiment][config])
             
         fig = plt.figure()
-        plt.boxplot(values, showmeans=True)
+        plt.boxplot(values, showmeans=True, showfliers=False)
         plt.xticks(range(1, len(BANDWIDTH_CONFIGURATIONS) + 1), BANDWIDTH_CONFIGURATIONS)
         plt.ylim(ymin = 0)
         plt.ylabel('makespan (s)')
         plt.savefig(os.path.join(folder, experiment + '_report.png'))
         plt.close(fig)
+
+
+def plot_bw(fig_name, bws, lims=None):
+    fig = plt.figure()
+    plt.plot(range(0, len(bws)), bws, 'b')
+    plt.xlabel('time (s)')
+    plt.ylabel('bandwidth (Mbps)')
+
+    if lims is not None and len(lims):
+        plt.plot(range(0, len(lims)), lims, 'r')
+
+    plt.savefig(fig_name)
+    plt.close(fig)
 
 
 def plot_hibench_bandwidths(data, folder):
@@ -69,24 +82,23 @@ def plot_hibench_bandwidths(data, folder):
                 folder_name = os.path.join(folder, node_folders[i])
                 file_id = '%s_%s' % (experiment, config)
                 out_bw_filename = os.path.join(folder_name, "monitor_%s.out" % file_id)
+                in_bw_filename = os.path.join(folder_name, "monitor_%s.in" % file_id)
                 bw_limit_filename = os.path.join(folder_name, "limits_%s.out" % file_id)
-                
-                with open(out_bw_filename, 'r') as bw:
-                    bws = map(float, bw)
-                    fig_name = os.path.join(folder_name, file_id + '_bw.png')
-                    fig = plt.figure()
-                    plt.plot(range(0, len(bws)), bws, 'b')
-                    plt.xlabel('time (s)')
-                    plt.ylabel('bandwidth (Mbps)')
-                    
+                lims = []
+
+                with open(out_bw_filename, 'r') as out_bw, open(in_bw_filename, 'r') as in_bw:
+                    out_bws = map(float, out_bw)
+                    in_bws = map(float, in_bw)
+                    out_fig_name = os.path.join(folder_name, file_id + '_bw_out.png')
+                    in_fig_name = os.path.join(folder_name, file_id + '_bw_in.png')
+
                     if os.path.isfile(bw_limit_filename):
                         with open(bw_limit_filename, 'r') as lim:
                             lims = [x / 1000 for x in map(float, lim)]
                             lims = np.repeat(lims, 5)
-                            plt.plot(range(0, len(lims)), lims, 'r')
-                    
-                    plt.savefig(fig_name)
-                    plt.close(fig)
+
+                    plot_bw(out_fig_name, out_bws, lims)
+                    plot_bw(in_fig_name, in_bws, lims)
                     
 
 def main():
