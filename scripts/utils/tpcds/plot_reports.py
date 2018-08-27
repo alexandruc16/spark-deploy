@@ -65,7 +65,7 @@ def plot_tpcds_results(data, folder):
 
         fig = plt.figure()
         plt.boxplot(values, showmeans=True)
-        plt.xticks(range(1, len(queries) + 1), queries, rotation=90)
+        plt.xticks(range(1, len(queries) + 1), queries, rotation=45, fontsize=8)
         plt.ylim(ymin=0)
         plt.ylabel('makespan (s)')
         plt.savefig(os.path.join(folder, config + '_report.png'))
@@ -126,7 +126,7 @@ def main():
     #master_folder = os.path.join(args.results_directory, 'master')
     hibench_results = get_tpcds_data(args.results_directory)
     
-    #plot_tpcds_results(hibench_results, args.results_directory)
+    plot_tpcds_results(hibench_results, args.results_directory)
     plot_tpcds_bandwidths(args.results_directory)
     
 
