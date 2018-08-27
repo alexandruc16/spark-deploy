@@ -149,7 +149,7 @@ def run_tpcds_experiment(workers, bw_config):
     print("Running TPCDS experiment: " + bw_config)
     try:
         cmd_res = Popen(
-            "spark-submit --class \"RunTPCDS\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/src/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"RunTPCDS\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
     except Exception as e:
@@ -160,7 +160,7 @@ def run_tpcds_experiment(workers, bw_config):
     try:
         print("Saving experiment results to HDFS")
         cmd_res = Popen(
-            "spark-submit --class \"RetrieveResults\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/src/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"RetrieveResults\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
         out_location = "/opt/spark-deploy/scripts/utils/reports/%s" % bw_config
@@ -178,7 +178,7 @@ def prepare_tpcds_experiments():
 
     try:
         cmd_res = Popen(
-            "spark-submit --class \"PrepareTPCDS\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/src/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"PrepareTPCDS\" --executor-cores 4 --num executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
     except Exception as e:
