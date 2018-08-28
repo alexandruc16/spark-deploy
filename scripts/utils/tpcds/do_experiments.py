@@ -103,6 +103,14 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
         issue_ssh_commands([worker], command)
 
 
+def format_namenode():
+    print("Formatting namenode")
+    try:
+        cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+
 def stop_spark():
     print("Stopping spark")
     try:
@@ -149,7 +157,7 @@ def run_tpcds_experiment(workers, bw_config):
     print("Running TPCDS experiment: " + bw_config)
     try:
         cmd_res = Popen(
-            "spark-submit --class \"RunTPCDS\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"RunTPCDS\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master spark://master.aca540:7077 --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
     except Exception as e:
@@ -160,7 +168,7 @@ def run_tpcds_experiment(workers, bw_config):
     try:
         print("Saving experiment results to HDFS")
         cmd_res = Popen(
-            "spark-submit --class \"RetrieveResults\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"RetrieveResults\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master spark://master.aca540:7077 --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
         out_location = "/opt/spark-deploy/scripts/utils/reports/%s" % bw_config
@@ -178,7 +186,7 @@ def prepare_tpcds_experiments():
 
     try:
         cmd_res = Popen(
-            "spark-submit --class \"PrepareTPCDS\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master yarn-client --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
+            "spark-submit --class \"PrepareTPCDS\" --executor-cores 4 --num-executors 32 --executor-memory 10g --master spark://master.aca540:7077 --jars /opt/spark-sql-perf/target/scala-2.11/spark-sql-perf-assembly-0.5.0-SNAPSHOT.jar /opt/spark-deploy/scripts/utils/tpcds/spark-sql-perf/target/scala-2.11/tpcds-experiments_2.11-1.0.jar",
             shell=True, stdout=PIPE).communicate()[0]
         print(cmd_res)
     except Exception as e:
@@ -186,6 +194,8 @@ def prepare_tpcds_experiments():
 
 
 def do_tpcds_experiments(workers):
+    format_namenode()
+    start_cluster()
     prepare_tpcds_experiments()
     set_bw_distribution(workers, "tpcds", "no_limit", NO_LIMIT_CONFIGURATION)
     run_tpcds_experiment(workers, "no_limit")

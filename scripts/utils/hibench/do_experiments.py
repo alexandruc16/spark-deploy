@@ -102,6 +102,14 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
         issue_ssh_commands([worker], command)
 
 
+def format_namenode():
+    print("Formatting namenode")
+    try:
+        cmd_res = Popen("echo Y | hdfs namenode -format", shell=True, stdout=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+
 def stop_spark():
     print("Stopping spark")
     try:
@@ -144,65 +152,85 @@ def start_cluster():
     start_spark()
 
 
+def print_failed_log(experiment, log_type):
+    log_location = os.path.join('/opt/hibench/report', experiment, log_type, 'bench.log')
+
+    if os.path.isfile(log_location):
+        with open(log_location, 'r') as f:
+            print f.read()
+
+
 def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
-    stop_cluster()
-    print("Clearing Hadoop files")
+    set_bw_distribution(workers, None, None, None)
+    print("Clearing HDFS")
+    cmd_res = Popen(["hdfs", "dfs", "-rmr", "/tmp", "/HiBench"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    #stop_cluster()
+    #print("Clearing Hadoop files")
 
-    command = 'rm -rf /usr/local/hadoop/tmp/*\n'
-    command += 'rm -rf /usr/local/hadoop/dfs/name/current\n'
-    command += 'rm -rf /usr/local/hadoop/dfs/name/data/current\n'
+    #command = 'rm -rf /usr/local/hadoop/tmp/*\n'
+    #command += 'rm -rf /usr/local/hadoop/dfs/name/current\n'
+    #command += 'rm -rf /usr/local/hadoop/dfs/name/data/current\n'
 
-    for i in range(0, len(workers)):
-        worker = workers[i]
-        issue_ssh_commands([worker], command)
+    #for i in range(0, len(workers)):
+    #    worker = workers[i]
+    #    issue_ssh_commands([worker], command)
 
-    try:
-        cmd_res = Popen("echo Y | hadoop namenode -format", shell=True, stdout=PIPE).communicate()[0]
-    except Exception as e:
-        print(e)
+    #try:
+    #    cmd_res = Popen("echo Y | hadoop namenode -format", shell=True, stdout=PIPE).communicate()[0]
+    #except Exception as e:
+    #    print(e)
 
-    start_cluster()
+    #start_cluster()
 
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
 
     try:
-        cmd_res = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
+        prepare_process = Popen(["bash", prepare_location], stdout=PIPE, stderr=PIPE)
+        cmd_res = prepare_process.communicate()[0]
+
+        if prepare_process.returncode != 0:
+            print_failed_log(experiment, 'prepare')
+            print("Prepare failed for " + experiment)
+            exit(1)
     except Exception as e:
         print(e)
     
     
-def run_hibench_experiment(experiment, exp_folder, workers, times):
+def run_hibench_experiment(experiment, exp_folder, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
 
     for i in range(0, times):
-        stop_spark()
-        sleep(10)
         start_spark()
-        sleep(10)
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
-        cmd_res = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE).communicate()[0]
-        print(cmd_res)
+        run_process = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE)
+        cmd_res = run_process.communicate()[0]
+
+        if run_process.returncode != 0:
+            print_failed_log(experiment, 'spark')
+            print("Experiment " + experiment + "failed at run " + str(i))
+            return
 
 
 def do_hibench_experiment(experiment, exp_folder, workers):
     set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
     prepare_hibench_experiment(experiment, exp_folder, workers)
-    run_hibench_experiment(experiment, exp_folder, workers, 10)
+    run_hibench_experiment(experiment, exp_folder, 10)
     
     bandwidth_configs = sorted(BANDWIDTH_CONFIGURATIONS.keys())
     
     for key in bandwidth_configs:
         set_bw_distribution(workers, experiment, key, BANDWIDTH_CONFIGURATIONS[key])
-        run_hibench_experiment(experiment, exp_folder, workers, 10)
+        run_hibench_experiment(experiment, exp_folder, 10)
     
     fnam = '/opt/hibench/report/%s.report' % experiment    
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
     
     
 def do_hibench_experiments(workers):
+    format_namenode()
+    start_cluster()
     do_hibench_experiment('sort', '/opt/hibench/bin/workloads/micro/sort', workers)
     do_hibench_experiment('terasort', '/opt/hibench/bin/workloads/micro/terasort', workers)
     do_hibench_experiment('wordcount', '/opt/hibench/bin/workloads/micro/wordcount', workers)
