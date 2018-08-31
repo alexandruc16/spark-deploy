@@ -1,9 +1,11 @@
 import argparse
 import itertools
+import json
 import paramiko
 import os
 import sys
 import time
+import urllib
 from subprocess import Popen, PIPE
 from time import sleep
 
@@ -160,6 +162,41 @@ def print_failed_log(experiment, log_type):
             print f.read()
 
 
+def clear_spark_history():
+    try:
+        cmd_res = Popen(["hdfs", "dfs", "-rm", "/spark-events/*"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
+
+
+def get_last_spark_log(experiment, bw_conf):
+    reports_dir = "/opt/spark-deploy/scripts/utils/task-reports/"
+
+    if not os.path.exists(reports_dir):
+        os.path.makedirs(reports_dir)
+
+    hist_server = "http://master.aca540:18088/api/v1"
+    last_app_url = "/applications?limit=1"
+    resp = urllib.urlopen(hist_server + last_app_url)
+    data = json.loads(resp.read())
+    app_id = data[0]['id']
+    stages_url = "/applications/%s/stages" % app_id
+    resp = urllib.urlopen(hist_server + stages_url)
+    data = json.loads(resp.read())
+
+    for stage in data:
+        stage = str(stage["stage_id"])
+        attempt = str(stage["attempt_id"])
+        summary_url = "/applications/%s/stages/%s/%s/taskSummary?quantiles=0.01,0.25,0.5,0.75,0.99" % (app_id, stage, attempt)
+        resp = urllib.urlopen(hist_server + summary_url)
+        data = json.loads(resp.read())
+        filename = "%s_%s_%s_%s_summary.json" % (experiment, bw_conf, stage, attempt)
+        filepath = os.path.join(reports_dir, filename)
+
+        with open(filepath, "w+") as f:
+            json.dump(data, f)
+
+
 def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
     set_bw_distribution(workers, None, None, None)
@@ -213,16 +250,20 @@ def run_hibench_experiment(experiment, exp_folder, times):
             return
 
 
-def do_hibench_experiment(experiment, exp_folder, workers):
+def do_hibench_experiment(experiment, exp_folder, workers, iterations=10):
     set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
     prepare_hibench_experiment(experiment, exp_folder, workers)
-    run_hibench_experiment(experiment, exp_folder, 10)
-    
+    run_hibench_experiment(experiment, exp_folder, iterations)
+    #get_last_spark_log(experiment, "nolimit")
+    #clear_spark_history()
+
     bandwidth_configs = sorted(BANDWIDTH_CONFIGURATIONS.keys())
     
     for key in bandwidth_configs:
         set_bw_distribution(workers, experiment, key, BANDWIDTH_CONFIGURATIONS[key])
-        run_hibench_experiment(experiment, exp_folder, 10)
+        run_hibench_experiment(experiment, exp_folder, iterations)
+        #get_last_spark_log(experiment, key)
+        #clear_spark_history()
     
     fnam = '/opt/hibench/report/%s.report' % experiment    
     cmd_res = Popen(["mv", '/opt/hibench/report/hibench.report', fnam], stdout=PIPE, stderr=PIPE).communicate()[0]
