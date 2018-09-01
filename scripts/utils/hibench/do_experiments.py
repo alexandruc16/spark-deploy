@@ -175,7 +175,7 @@ def get_last_spark_log(experiment, bw_conf):
     if not os.path.exists(reports_dir):
         os.path.makedirs(reports_dir)
 
-    hist_server = "http://master.aca540:18088/api/v1"
+    hist_server = "http://master.aca540:18080/api/v1"
     last_app_url = "/applications?limit=1"
     resp = urllib.urlopen(hist_server + last_app_url)
     data = json.loads(resp.read())
@@ -185,8 +185,8 @@ def get_last_spark_log(experiment, bw_conf):
     data = json.loads(resp.read())
 
     for stage in data:
-        stage = str(stage["stage_id"])
-        attempt = str(stage["attempt_id"])
+        stage = str(stage["stageId"])
+        attempt = str(stage["attemptId"])
         summary_url = "/applications/%s/stages/%s/%s/taskSummary?quantiles=0.01,0.25,0.5,0.75,0.99" % (app_id, stage, attempt)
         resp = urllib.urlopen(hist_server + summary_url)
         data = json.loads(resp.read())
@@ -201,6 +201,8 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
     set_bw_distribution(workers, None, None, None)
     print("Clearing HDFS")
+    stop_cluster()
+    start_cluster()
     cmd_res = Popen(["hdfs", "dfs", "-rmr", "/tmp", "/HiBench"], stdout=PIPE, stderr=PIPE).communicate()[0]
     #stop_cluster()
     #print("Clearing Hadoop files")
@@ -230,10 +232,12 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
         if prepare_process.returncode != 0:
             print_failed_log(experiment, 'prepare')
             print("Prepare failed for " + experiment)
-            exit(1)
+            return 1
     except Exception as e:
         print(e)
-    
+
+    return 0
+
     
 def run_hibench_experiment(experiment, exp_folder, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
@@ -251,8 +255,11 @@ def run_hibench_experiment(experiment, exp_folder, times):
 
 
 def do_hibench_experiment(experiment, exp_folder, workers, iterations=10):
+    set_bw_distribution(workers, None, None, None)
+    if prepare_hibench_experiment(experiment, exp_folder, workers) > 0:
+        return
+
     set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
-    prepare_hibench_experiment(experiment, exp_folder, workers)
     run_hibench_experiment(experiment, exp_folder, iterations)
     #get_last_spark_log(experiment, "nolimit")
     #clear_spark_history()
@@ -271,7 +278,6 @@ def do_hibench_experiment(experiment, exp_folder, workers, iterations=10):
     
 def do_hibench_experiments(workers):
     format_namenode()
-    start_cluster()
     do_hibench_experiment('sort', '/opt/hibench/bin/workloads/micro/sort', workers)
     do_hibench_experiment('terasort', '/opt/hibench/bin/workloads/micro/terasort', workers)
     do_hibench_experiment('wordcount', '/opt/hibench/bin/workloads/micro/wordcount', workers)
