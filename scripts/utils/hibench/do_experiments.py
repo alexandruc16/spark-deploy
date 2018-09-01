@@ -112,6 +112,16 @@ def format_namenode():
         print(e)
 
 
+def clear_hdfs(workers):
+    command = 'rm -rf /usr/local/hadoop/dfs/*'
+    command += 'rm -rf /usr/local/hadoop/tmp/*'
+    command += 'mkdir -p /usr/local/hadoop/dfs/name/data'
+
+    for i in range(0, len(workers)):
+        worker = workers[i]
+        issue_ssh_commands([worker], command)
+
+
 def stop_spark():
     print("Stopping spark")
     try:
@@ -201,9 +211,11 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
     set_bw_distribution(workers, None, None, None)
     print("Clearing HDFS")
-    stop_cluster()
-    start_cluster()
     cmd_res = Popen(["hdfs", "dfs", "-rmr", "/tmp", "/HiBench"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    stop_cluster()
+    clear_hdfs(workers)
+    format_namenode()
+    start_cluster()
     #stop_cluster()
     #print("Clearing Hadoop files")
 
