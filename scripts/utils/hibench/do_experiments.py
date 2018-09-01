@@ -211,28 +211,11 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     print("Preparing experiment: " + experiment)
     set_bw_distribution(workers, None, None, None)
     print("Clearing HDFS")
-    cmd_res = Popen(["hdfs", "dfs", "-rmr", "/tmp", "/HiBench"], stdout=PIPE, stderr=PIPE).communicate()[0]
+    cmd_res = Popen(["hdfs", "dfs", "-rm", "-r", "-skipTrash", "/tmp", "/HiBench"], stdout=PIPE, stderr=PIPE).communicate()[0]
     stop_cluster()
-    clear_hdfs(workers)
-    format_namenode()
+    #clear_hdfs(workers)
+    #format_namenode()
     start_cluster()
-    #stop_cluster()
-    #print("Clearing Hadoop files")
-
-    #command = 'rm -rf /usr/local/hadoop/tmp/*\n'
-    #command += 'rm -rf /usr/local/hadoop/dfs/name/current\n'
-    #command += 'rm -rf /usr/local/hadoop/dfs/name/data/current\n'
-
-    #for i in range(0, len(workers)):
-    #    worker = workers[i]
-    #    issue_ssh_commands([worker], command)
-
-    #try:
-    #    cmd_res = Popen("echo Y | hadoop namenode -format", shell=True, stdout=PIPE).communicate()[0]
-    #except Exception as e:
-    #    print(e)
-
-    #start_cluster()
 
     print("Generating data for experiment: " + experiment)
     prepare_location = os.path.join(exp_folder, 'prepare/prepare.sh')
