@@ -82,7 +82,7 @@ def set_bandwidths(workers, values):
         issue_ssh_commands([worker], command)
         
         
-def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
+def set_bw_distribution(workers, experiment=None, config_key=None, values=None, iteration=0):
     for i in range(0, len(workers)):
         worker = workers[i]
         command = 'sudo pkill -f vary_bw.py\n'
@@ -90,6 +90,10 @@ def set_bw_distribution(workers, experiment=None, config_key=None, values=None):
         
         if experiment is not None and config_key is not None:
             file_id = "%s_%s" % (experiment, config_key)
+
+            if iteration > 0:
+                file_id = "%s_%s" % (file_id, str(iteration))
+
             command += 'rm -rf /opt/bandwidth-throttler/monitor_%s.in\n' % file_id
             command += 'rm -rf /opt/bandwidth-throttler/monitor_%s.out\n' % file_id
             command += 'nohup python -u /opt/bandwidth-throttler/monitor_bandwidth.py ens3 /opt/bandwidth-throttler/monitor_%s.out /opt/bandwidth-throttler/monitor_%s.in proc 9 1>/dev/null 2>/dev/null &\n' % (file_id, file_id)
@@ -234,36 +238,35 @@ def prepare_hibench_experiment(experiment, exp_folder, workers):
     return 0
 
     
-def run_hibench_experiment(experiment, exp_folder, times):
+def run_hibench_experiment(workers, experiment, bw_conf_name, bw_conf, exp_folder, times):
     run_location = os.path.join(exp_folder, 'spark/run.sh')
 
     for i in range(0, times):
+        set_bw_distribution(workers, experiment, bw_conf_name, bw_conf, i+1)
         start_spark()
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
         run_process = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE)
         cmd_res = run_process.communicate()[0]
 
-        if run_process.returncode != 0:
-            print_failed_log(experiment, 'spark')
-            print("Experiment " + experiment + "failed at run " + str(i))
-            return
+        #if run_process.returncode != 0:
+        #    print_failed_log(experiment, 'spark')
+        #    print("Experiment " + experiment + "failed at run " + str(i))
+        #    return
 
 
 def do_hibench_experiment(experiment, exp_folder, workers, iterations=10):
-    set_bw_distribution(workers, None, None, None)
-    if prepare_hibench_experiment(experiment, exp_folder, workers) > 0:
-        return
+    #set_bw_distribution(workers, None, None, None)
+    #if prepare_hibench_experiment(experiment, exp_folder, workers) > 0:
+    #    return
 
-    set_bw_distribution(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION)
-    run_hibench_experiment(experiment, exp_folder, iterations)
+    run_hibench_experiment(workers, experiment, 'no_limit', NO_LIMIT_CONFIGURATION, exp_folder, iterations)
     #get_last_spark_log(experiment, "nolimit")
     #clear_spark_history()
 
     bandwidth_configs = sorted(BANDWIDTH_CONFIGURATIONS.keys())
     
     for key in bandwidth_configs:
-        set_bw_distribution(workers, experiment, key, BANDWIDTH_CONFIGURATIONS[key])
-        run_hibench_experiment(experiment, exp_folder, iterations)
+        run_hibench_experiment(workers, experiment, key, BANDWIDTH_CONFIGURATIONS[key], exp_folder, iterations)
         #get_last_spark_log(experiment, key)
         #clear_spark_history()
     
@@ -272,7 +275,7 @@ def do_hibench_experiment(experiment, exp_folder, workers, iterations=10):
     
     
 def do_hibench_experiments(workers):
-    format_namenode()
+    #format_namenode()
     do_hibench_experiment('sort', '/opt/hibench/bin/workloads/micro/sort', workers)
     do_hibench_experiment('terasort', '/opt/hibench/bin/workloads/micro/terasort', workers)
     do_hibench_experiment('wordcount', '/opt/hibench/bin/workloads/micro/wordcount', workers)
