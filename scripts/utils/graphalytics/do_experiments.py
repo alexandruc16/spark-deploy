@@ -179,9 +179,18 @@ def run_graphalytics_experiments(workers, experiment, bw_conf_name, bw_conf, tim
         set_bw_distribution(workers, experiment, bw_conf_name, bw_conf, i+1)
         start_spark()
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
-        run_process = Popen(["bash", "bin/sh/run-benchmark.sh"], cwd=GRAPHALYTICS_ROOT_FOLDER, stdout=PIPE, stderr=PIPE)
-        cmd_res = run_process.communicate()[0]
-        retrieve_graphalytics_results(bw_conf_name, i+1)
+
+        try:
+            run_process = Popen(["bash", "bin/sh/run-benchmark.sh"], cwd=GRAPHALYTICS_ROOT_FOLDER, stdout=PIPE, stderr=PIPE)
+            cmd_res = run_process.communicate()[0]
+        except Exception as e:
+            print(e)
+            continue
+
+        try:
+            retrieve_graphalytics_results(bw_conf_name, i+1)
+        except Exception as e:
+            print(e)
 
 
 def do_graphalytics_experiments(workers, iterations=5):
@@ -202,10 +211,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except:
-        print("Stopping hadoop")
-        cmd_res = Popen(["bash", '/usr/local/hadoop/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
-        
-        print("Stopping spark")
-        cmd_res = Popen(["bash", '/usr/local/spark/sbin/stop-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+    except Exception as e:
+        print(e)
 
