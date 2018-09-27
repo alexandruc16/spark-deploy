@@ -137,9 +137,11 @@ def stop_spark():
 def start_spark():
     print("Starting spark")
     try:
-        cmd_res = Popen(["bash", '/usr/local/spark/sbin/start-all.sh'], stdout=PIPE, stderr=PIPE).communicate()[0]
+        cmd_res = Popen("bash /usr/local/spark/sbin/start-all.sh | grep -c \"Worker running\"", shell=True, stdout=PIPE).communicate()[0]
+        return int(cmd_res)
     except Exception as e:
         print(e)
+        return 32
 
 
 def stop_hadoop():
@@ -243,7 +245,12 @@ def run_hibench_experiment(workers, experiment, bw_conf_name, bw_conf, exp_folde
 
     for i in range(0, times):
         set_bw_distribution(workers, experiment, bw_conf_name, bw_conf, i+1)
-        start_spark()
+        running_workers = start_spark()
+
+        if running_workers < 32:
+            i -= 1
+            Popen("sed -i \"$ d\" /opt/hibench/report/hibench.report", shell=True, stdout=PIPE)
+
         print(experiment + ": Running " + experiment + " #" + str(i + 1))
         run_process = Popen(["bash", run_location], stdout=PIPE, stderr=PIPE)
         cmd_res = run_process.communicate()[0]
