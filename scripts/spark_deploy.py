@@ -46,9 +46,10 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
             channel.close()
             ssh.close()
         
-        except:
+        except Exception as e:
             print("Error occurred while issuing SSH commands to " + ip)
             print(commands)
+            print(e)
             raise
 
 
@@ -271,6 +272,34 @@ def generate_bw_files(workers, bw, filename):
     f.close()
 
 
+def configure_kafka(kafka_dir, master_hostname, master_ip, nodes_dict, remote_username):
+    conf_file = os.path.join(kafka_dir, 'conf/server.properties')
+    nodes_dict[master_hostname] = master_ip
+    hostnames = nodes_dict.keys()
+
+    for i in range(1, len(hostnames)):
+        command = 'sudo sed -i \'s?broker.id=.*?broker.id=%d?g\' %s\n' % (i, conf_file)
+        issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
+
+    connections = ','.join([('%s:2181' % hostname) for hostname in nodes_dict.keys()])
+    ssh_commands = 'sudo sed -i \'s?zookeeper.connect=.*?zookeeper.connect=%s?g\' %s\n' % (connections, conf_file)
+    issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
+
+
+def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, remote_username):
+    id_file = os.path.join(zookeeper_dir, 'myid')
+    ssh_commands = ''
+    nodes_dict[master_hostname] = master_ip
+    hostnames = nodes_dict.keys()
+
+    for i in range(1, len(hostnames)):
+        ssh_commands += 'echo \'server.%d=%s:2888:3888\' >> %s\n' % (i, hostnames[i], os.path.join(zookeeper_dir, 'conf/zoo.cfg'))
+        command = 'echo \'%d\' >> %s\n' % id_file
+        issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
+
+    issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
+
+
 def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring HiBench')
     ssh_commands = ''
@@ -387,6 +416,9 @@ def main():
                         default=defaults.num_slaves,
                         type=int, action="store",
                         help="Number of slave nodes to spawn.")
+    parser.add_argument("-kn", "--kafka-nodes", metavar="", dest="kafka_nodes",
+                        default=0, type=int, action="store",
+                        help="Kafka nodes to spawn.")
     parser.add_argument("-m", "--master-ip", metavar="", dest="master_ip",
                         action="store", default=defaults.master_ip,
                         help="Ip address of Master")
@@ -406,6 +438,9 @@ def main():
     num_slaves = args.num_slaves
     master_hostname = defaults.master_hostname
     master_ip = args.master_ip
+    kafka_nodes = args.kafka_nodes
+    zookeeper_dir = defaults.zookeeper_dir
+    kafka_dir = defaults.kafka_dir
     verbose = args.verbose
     dryrun = args.dryrun
     filename = defaults.filename
@@ -418,7 +453,6 @@ def main():
     api_url = defaults.api_url
     api_user = defaults.api_user
     api_pass = defaults.api_pass
-    
 
     if dryrun:
         print("\n")
@@ -467,7 +501,7 @@ def main():
     for host in slave_hostnames:
         slave_file.write(host + "\n")
 
-    slave_hostnames.append(master_ip)
+    #slave_hostnames.append(master_ip)
 
 # move slaves file to master's spark conf directory
     scp(master_ip, remote_username, filename, spark_dir, verbose)
@@ -481,14 +515,37 @@ def main():
     # wait until all slaves are available
     set_up_hosts_file(master_hostname, master_ip, slaves_dict, remote_username)
     
-    print("*********** Starting up *********************************")
-    
     hibench_conf_dir = os.path.join(hibench_dir, 'conf')
     
     configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
     #format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
-    configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    #configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
+
+    if args.kafka_nodes > 0:
+        kafka_cluster_name = "%s.kafka" % args.cluster_name
+        print("Cluster name will be set to: " + kafka_cluster_name + "")
+        input = raw_input("To avoid HOSTNAME conflicts, Please verify that "
+                          "cluster name is unique... Continue (y/n): ")
+        if input == 'n':
+            print("Ok, Exit...")
+            sys.exit(0)
+
+        kafka_dict = spawn_slaves(kafka_cluster_name, slave_template, args.kafka_nodes, api_url, api_user, api_pass)
+
+        print("\n")
+        print("*********** All Kafka nodes Created **************************")
+        print("*********** Waiting for kafka nodes to finish setting up *****")
+        print("\n")
+
+        # wait until all kafka nodes are available
+        kafka_master_hostname = '%s.kafka' % master_hostname
+        set_up_hosts_file(kafka_master_hostname, master_ip, kafka_dict, remote_username)
+        configure_zookeeper(zookeeper_dir, kafka_master_hostname, master_ip, kafka_dict, remote_username)
+        configure_kafka(kafka_dir, kafka_master_hostname, master_ip, kafka_dict, remote_username)
+
+    print("*********** Starting up *********************************")
+
     #start_hadoop(hadoop_dir, master_ip, remote_username)
     #start_spark(spark_dir, master_hostname, master_ip, slaves_dict.values(), remote_username)
 
