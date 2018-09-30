@@ -507,7 +507,7 @@ def main():
             print("Ok, Exit...")
             sys.exit(0)
 
-        kafka_dict = spawn_slaves(kafka_cluster_name, slave_template, args.kafka_nodes, api_url, api_user, api_pass)
+        kafka_dict = spawn_slaves(kafka_cluster_name, slave_template, args.kafka_nodes)
 
         print("\n")
         print("*********** All Kafka nodes Created **************************")
