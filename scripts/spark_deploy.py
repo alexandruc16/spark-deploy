@@ -193,17 +193,17 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
     
     
 def configure_kafka(kafka_dir, master_hostname, master_ip, nodes_dict, remote_username):
-    conf_file = os.path.join(kafka_dir, 'conf/server.properties')
+    conf_file = os.path.join(kafka_dir, 'config/server.properties')
     nodes_dict[master_hostname] = master_ip
     hostnames = nodes_dict.keys()
 
-    for i in range(1, len(hostnames)):
+    for i in range(1, len(hostnames) + 1):
         command = 'sudo sed -i \'s?broker.id=.*?broker.id=%d?g\' %s\n' % (i, conf_file)
         issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
 
     connections = ','.join([('%s:2181' % hostname) for hostname in nodes_dict.keys()])
     ssh_commands = 'sudo sed -i \'s?zookeeper.connect=.*?zookeeper.connect=%s?g\' %s\n' % (connections, conf_file)
-    issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
+    issue_ssh_commands(nodes_dict.values(), ssh_commands, remote_username)
 
 
 def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, remote_username):
@@ -212,12 +212,12 @@ def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, r
     nodes_dict[master_hostname] = master_ip
     hostnames = nodes_dict.keys()
 
-    for i in range(1, len(hostnames)):
-        ssh_commands += 'echo \'server.%d=%s:2888:3888\' >> %s\n' % (i, hostnames[i], os.path.join(zookeeper_dir, 'conf/zoo.cfg'))
+    for i in range(1, len(hostnames) + 1):
+        ssh_commands += 'echo \'server.%d=%s:2888:3888\' hostnames>> %s\n' % (i, hostnames[i], os.path.join(zookeeper_dir, 'conf/zoo.cfg'))
         command = 'echo \'%d\' >> %s\n' % id_file
         issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
 
-    issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
+    issue_ssh_commands(nodes_dict.values(), ssh_commands, remote_username)
 
 
 def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username):
