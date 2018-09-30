@@ -20,6 +20,10 @@ hadoop_dir = "/usr/local/hadoop/"
 spark_dir = "/usr/local/spark/"
 # Hibench installation directory
 hibench_dir = "/opt/hibench/"
+# ZooKeeper directory
+zookeeper_dir = "/opt/zookeeper"
+# Kafka directory
+kafka_dir = "/opt/kafka"
 # OpenNebula Cloud API URL
 api_url=""
 # OpenNebula Cloud API username
