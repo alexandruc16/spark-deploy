@@ -214,7 +214,7 @@ def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, r
 
     for i in range(1, len(hostnames) + 1):
         ssh_commands += 'echo \'server.%d=%s:2888:3888\' hostnames>> %s\n' % (i, hostnames[i], os.path.join(zookeeper_dir, 'conf/zoo.cfg'))
-        command = 'echo \'%d\' >> %s\n' % id_file
+        command = 'echo \'%d\' >> %s\n' % (i, id_file)
         issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
 
     issue_ssh_commands(nodes_dict.values(), ssh_commands, remote_username)
