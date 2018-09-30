@@ -520,7 +520,7 @@ def main():
     configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
     #format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
-    #configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
 
     if args.kafka_nodes > 0:
         kafka_cluster_name = "%s.kafka" % args.cluster_name
