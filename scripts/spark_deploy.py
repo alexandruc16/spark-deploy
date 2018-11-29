@@ -231,6 +231,9 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
         '{{dfs_data_dir}}': hdfs_data_dir,
         '{{hadoop_tmp_dir}}': hadoop_tmp_dir,
         '{{max_worker_memory}}': int(worker_memory * 1024),
+        '{{mapreduce_memory}}': int(worker_memory * 1024),
+        '{{map_memory}}': int(worker_memory * 512),
+        '{{reduce_memory}}': int(worker_memory * 1024),
         '{{min_worker_memory}}': int(worker_memory * 512),
         '{{worker_memory}}': int(worker_memory * 1024),
     }
@@ -259,10 +262,8 @@ def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_u
     replacements = {
         '{{master_hostname}}': master_hostname,
         '{{worker_cores}}': int(node_cores/2),
-        '{{worker_memory}}': int((node_memory - driver_memory) / 2),
-        '{{driver_memory}}': driver_memory,
-        '{{master_hostname}}': master_hostname,
-        '{{master_hostname}}': master_hostname
+        '{{worker_memory}}': int(abs((node_memory - driver_memory) / 2)),
+        '{{driver_memory}}': int(min(driver_memory, node_memory))
     }
     ssh_commands = ''
 
@@ -321,7 +322,7 @@ def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, r
     issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
 
 
-def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username, num_nodes, node_cores, driver_memory, node_memory):
+def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username, num_nodes, node_cores, node_memory, driver_memory):
     print('Configuring HiBench')
     ssh_commands = ''
         
@@ -555,7 +556,7 @@ def main():
     
     hibench_conf_dir = os.path.join(hibench_dir, 'conf')
     
-    configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username, node_memory)
+    configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username, node_memory - driver_memory)
     #format_namenode(hadoop_dir, master_ip, remote_username)
     configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username, node_cores, node_memory, driver_memory)
     configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username, num_slaves + 1, node_cores, node_memory, driver_memory)
