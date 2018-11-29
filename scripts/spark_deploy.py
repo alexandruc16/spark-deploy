@@ -17,14 +17,14 @@ pkey = paramiko.RSAKey.from_private_key_file(os.path.expanduser("~/.ssh/id_rsa")
 def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
     timeout = 5
     
-    if not master_ip is None:
+    if master_ip is not None:
         slaves_list.insert(0, master_ip)
             
     for ip in slaves_list:
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(ip, username=remote_username, pkey=pkey)
+            ssh.connect(ip[0], username=remote_username, pkey=pkey)
             channel = ssh.invoke_shell()
             stdin = channel.makefile('wb')
             stdout = channel.makefile('rb')
@@ -56,7 +56,7 @@ def issue_ssh_commands(slaves_list, commands, remote_username, master_ip=None):
 def get_or_generate_public_key(master_ip, username, verbose):
     try:
         out = Popen(["./master_keys.sh", master_ip, username], stdout = PIPE,
-                    stderr = PIPE).communicate()[0].strip("\n")
+                    stderr=PIPE).communicate()[0].strip("\n")
         if len(out) < 30:
             print(out)
             raise ValueError
@@ -97,7 +97,7 @@ def update_master_public_key(master_ssh_key, verbose):
 
 def scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
     try:
-        dest = remote_username + "@" + vm_ip + ":" + spark_dir
+        dest = remote_username + "@" + vm_ip[0] + ":" + spark_dir
         print ("copying to " + dest)
         out = Popen(["scp", filename, dest],
                     stdout=PIPE,
@@ -111,6 +111,16 @@ def scp(vm_ip, remote_username, filename, spark_dir, verbose=False):
     except:
         print("Unknown error Occured")
         raise
+
+
+def parse_nodes(filepath):
+    slaves_dict = {}
+
+    with open(filepath) as f:
+        for line in f:
+            slave = line.split()
+            slaves_dict[slave[1]] = [slave[0]]
+    return slaves_dict
 
 
 def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_user=None, api_pass=None):
@@ -136,7 +146,7 @@ def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_use
                 vm_info = Popen(["onevm", "show", str(slave_id)],
                                 stdout=PIPE).communicate()[0]
                 ip_list = re.findall(r'[0-9]+(?:\.[0-9]+){3}', vm_info)
-                slaves_dict[slave_name] = ip_list[0]
+                slaves_dict[slave_name] = [ip_list[0]]
         else:
             vm_ids = []
             one = pyone.OneServer(api_url, session=api_user + ":" + api_pass)
@@ -145,7 +155,7 @@ def spawn_slaves(cluster_name, slave_template, num_slaves, api_url=None, api_use
                 slave_name = "slave" + str(i) + "." + cluster_name
                 vm_id = one.template.instantiate(int(slave_template), slave_name, False, "", False)
                 vm_ids.append(vm_id)
-                slaves_dict[slave_name] = one.vm.info(vm_id).TEMPLATE['NIC'][0]['IP']
+                slaves_dict[slave_name] = [one.vm.info(vm_id).TEMPLATE['NIC'][0]['IP'], one.vm.info(vm_id).TEMPLATE['NIC'][1]['IP']]
 
             running_vms = 0
 
@@ -185,20 +195,20 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
     nodes_online = []
     
     for node in nodes_dict.iterkeys():
-        ssh_commands += "echo '%s %s' | sudo tee -a /etc/hosts\n" % (nodes_dict[node], node)
+        ssh_commands += "echo '%s %s' | sudo tee -a /etc/hosts\n" % (nodes_dict[node][len(nodes_dict[node])-1], node)
     
     while ips_count > 0:
         for ip in ips:
             try:
                 issue_ssh_commands([ip], ssh_commands, remote_username)
-                nodes_online.append(ip)
+                nodes_online.append(ip[0])
             except:
                 pass
         
         nodes_online_count = len(nodes_online)
         
         if nodes_online_count > 0:
-            ips = [ip for ip in ips if ip not in nodes_online]
+            ips = [ip[0] for ip in ips if ip[0] not in nodes_online]
             ips_count = len(ips)
         
         if ips_count > 0:
@@ -211,9 +221,9 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
 def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username):
     print('Configuring Hadoop..')
     conf_dir = os.path.join(hadoop_dir, 'etc/hadoop')
-    hdfs_name_dir = os.path.join(hadoop_dir, 'dfs/name')
-    hdfs_data_dir = os.path.join(hadoop_dir, 'dfs/name/data')
-    hadoop_tmp_dir = os.path.join(hadoop_dir, 'tmp')
+    hdfs_name_dir = os.path.join('/mnt/data', 'dfs/name')
+    hdfs_data_dir = os.path.join('/mnt/data', 'dfs/name/data')
+    hadoop_tmp_dir = os.path.join('/mnt/data', 'tmp')
     replacements = {
         '{{master_hostname}}': master_hostname, 
         '{{num_workers}}': str(len(slaves_dict.values())),
@@ -294,7 +304,7 @@ def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, r
 
     for i in range(1, len(hostnames)):
         ssh_commands += 'echo \'server.%d=%s:2888:3888\' >> %s\n' % (i, hostnames[i], os.path.join(zookeeper_dir, 'conf/zoo.cfg'))
-        command = 'echo \'%d\' >> %s\n' % id_file
+        command = 'echo \'%d\' >> %s\n' % (i, id_file)
         issue_ssh_commands([nodes_dict[hostnames[i]]], command, remote_username)
 
     issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
@@ -315,7 +325,7 @@ def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, 
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'hadoop.conf'))
         ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'spark.conf'))
-        
+
     slaves_dict[master_hostname] = master_ip
     
     issue_ssh_commands(slaves_dict.values(), ssh_commands, remote_username, master_ip)
@@ -422,6 +432,9 @@ def main():
     parser.add_argument("-m", "--master-ip", metavar="", dest="master_ip",
                         action="store", default=defaults.master_ip,
                         help="Ip address of Master")
+    parser.add_argument("-f", "--file", metavar="", dest="file",
+                        action="store", default="",
+                        help="File containing cluster nodes IPs and hostnames")
     parser.add_argument("-v", "--verbose", dest="verbose",
                         action="store_true", help="verbose output")
     parser.add_argument("-D", "--dryrun", dest="dryrun",
@@ -437,13 +450,15 @@ def main():
     cluster_name = args.cluster_name
     num_slaves = args.num_slaves
     master_hostname = defaults.master_hostname
-    master_ip = args.master_ip
+    master_ip = [args.master_ip] #TODO careful with internal ip
+    #TODO add internal ip
     kafka_nodes = args.kafka_nodes
     zookeeper_dir = defaults.zookeeper_dir
     kafka_dir = defaults.kafka_dir
     verbose = args.verbose
     dryrun = args.dryrun
     filename = defaults.filename
+    file = args.file
     slave_template = defaults.slave_template
     hadoop_dir = defaults.hadoop_dir
     spark_dir = defaults.spark_dir
@@ -458,7 +473,7 @@ def main():
         print("\n")
         print("Remote Username: " + str(remote_username))
         print("Cluster Name: " + str(cluster_name))
-        print("Master IP: " + str(master_ip))
+        print("Master IP: " + str(master_ip[0]))
         print("Number of Slaves: " + str(num_slaves))
         print("Slave template: " + str(slave_template))
         print("Hadoop directory: " + str(hadoop_dir))
@@ -481,19 +496,23 @@ def main():
     #print("\n")
 # Now create the requested number of slaves
 # confirm cluster name
-    print("Cluster name will be set to: " + args.cluster_name)
-    input = raw_input("To avoid HOSTNAME conflicts, Please verify that "
-                      "cluster name is unique... Continue (y/n): ")
-    if input == 'n':
-        print("Ok, Exit...")
-        sys.exit(0)
+    slaves_dict = {}
+    if not file:
+        print("Cluster name will be set to: " + args.cluster_name)
+        input = raw_input("To avoid HOSTNAME conflicts, Please verify that "
+                          "cluster name is unique... Continue (y/n): ")
+        if input == 'n':
+            print("Ok, Exit...")
+            sys.exit(0)
 
-    slaves_dict = spawn_slaves(cluster_name, slave_template, num_slaves, api_url, api_user, api_pass)
+        slaves_dict = spawn_slaves(cluster_name, slave_template, num_slaves, api_url, api_user, api_pass)
+    else:
+        slaves_dict = parse_nodes(file)
     slave_hostnames = []
     print("\n")
     for slave_id, hostname in slaves_dict.items():
-        print(hostname + " Created...")
-        slave_hostnames.append(str(hostname))
+        print(slave_id + " Created...")
+        slave_hostnames.append(str(slave_id))
     print("\n")
     
 # save slaves hostnames to file
