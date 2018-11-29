@@ -218,7 +218,7 @@ def set_up_hosts_file(master_hostname, master_ip, nodes_dict, remote_username):
     print('Hosts file set up!')
 
 
-def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username):
+def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username, worker_memory):
     print('Configuring Hadoop..')
     conf_dir = os.path.join(hadoop_dir, 'etc/hadoop')
     hdfs_name_dir = os.path.join('/mnt/data', 'dfs/name')
@@ -229,7 +229,10 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
         '{{num_workers}}': str(len(slaves_dict.values())),
         '{{dfs_name_dir}}': hdfs_name_dir,
         '{{dfs_data_dir}}': hdfs_data_dir,
-        '{{hadoop_tmp_dir}}': hadoop_tmp_dir
+        '{{hadoop_tmp_dir}}': hadoop_tmp_dir,
+        '{{max_worker_memory}}': int(worker_memory * 1024),
+        '{{min_worker_memory}}': int(worker_memory * 512),
+        '{{worker_memory}}': int(worker_memory * 1024),
     }
     
     ssh_commands = ''
@@ -250,14 +253,22 @@ def configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote
     print('Hadoop configured!')
 
 
-def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
+def configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username, node_cores, node_memory, driver_memory):
     print('Configuring Spark..')
     conf_file = os.path.join(spark_dir, 'conf/spark-env.sh')
-    replacements = {'{{master_hostname}}': master_hostname}
+    replacements = {
+        '{{master_hostname}}': master_hostname,
+        '{{worker_cores}}': int(node_cores/2),
+        '{{worker_memory}}': int((node_memory - driver_memory) / 2),
+        '{{driver_memory}}': driver_memory,
+        '{{master_hostname}}': master_hostname,
+        '{{master_hostname}}': master_hostname
+    }
     ssh_commands = ''
 
     for r in replacements:
         ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], conf_file)
+        ssh_commands += 'sudo sed -i \'s/%s/%s/g\' %s\n' % (r, replacements[r], os.path.join(spark_dir, 'conf/spark-defaults.conf'))
         
     ssh_commands += 'echo \"SPARK_MASTER_HOST=\'%s\'\" | sudo tee -a %s\n' % (master_hostname, conf_file)
     
@@ -310,7 +321,7 @@ def configure_zookeeper(zookeeper_dir, master_hostname, master_ip, nodes_dict, r
     issue_ssh_commands(hostnames.values(), ssh_commands, remote_username)
 
 
-def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username):
+def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username, num_nodes, node_cores, driver_memory, node_memory):
     print('Configuring HiBench')
     ssh_commands = ''
         
@@ -319,10 +330,15 @@ def configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, 
         '{{hadoop_dir}}': hadoop_dir,
         '{{hadoop_conf_dir}}': os.path.join(hadoop_dir, 'etc/hadoop'),
         '{{hadoop_exec}}': os.path.join(hadoop_dir, 'bin/hadoop'),
-        '{{spark_dir}}': spark_dir
+        '{{spark_dir}}': spark_dir,
+        '{{worker_memory}}': int((node_memory - driver_memory) / 2),
+        '{{driver_memory}}': driver_memory,
+        '{{map_parallelism}}': int(num_nodes * node_cores),
+        '{{shuffle_parallelism}}': int(2 * num_nodes * node_cores),
     }
 
     for r in replacements:
+        ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'hibench.conf'))
         ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'hadoop.conf'))
         ssh_commands += 'sudo sed -i \'s?%s?%s?g\' %s\n' % (r, replacements[r], os.path.join(hibench_conf_dir, 'spark.conf'))
 
@@ -458,6 +474,9 @@ def main():
     verbose = args.verbose
     dryrun = args.dryrun
     filename = defaults.filename
+    node_memory = defaults.node_memory
+    node_cores = defaults.node_cores
+    driver_memory = defaults.driver_memory
     file = args.file
     slave_template = defaults.slave_template
     hadoop_dir = defaults.hadoop_dir
@@ -536,10 +555,10 @@ def main():
     
     hibench_conf_dir = os.path.join(hibench_dir, 'conf')
     
-    configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    configure_hadoop(hadoop_dir, master_hostname, master_ip, slaves_dict, remote_username, node_memory)
     #format_namenode(hadoop_dir, master_ip, remote_username)
-    configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
-    configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username)
+    configure_spark(spark_dir, master_hostname, master_ip, slaves_dict, remote_username, node_cores, node_memory, driver_memory)
+    configure_hibench(hibench_conf_dir, hadoop_dir, spark_dir, master_hostname, master_ip, slaves_dict, remote_username, num_slaves + 1, node_cores, node_memory, driver_memory)
 
     if args.kafka_nodes > 0:
         kafka_cluster_name = "%s.kafka" % args.cluster_name
